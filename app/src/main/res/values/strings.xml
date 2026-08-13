@@ -2,5 +2,9 @@
     <string name="app_name">Poker Timer</string>
     <string name="timer_paused">Paused</string>
     <string name="timer_running">Running</string>
-    <string name="timer_instructions">Pause stops the timer. Fast Forward or Rewind starts it again.</string>
+    <string name="timer_finished">TIME’S UP!</string>
+    <string name="timer_finished_time">00:00</string>
+    <string name="timer_instructions">Pause starts or stops the timer. Fast Forward or Rewind resets it.</string>
+    <string name="last_button_none">Last button pressed: None</string>
+    <string name="last_button_pressed">Last button pressed: %1$s (%2$d)</string>
 </resources>
