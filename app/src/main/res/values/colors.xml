@@ -1,4 +1,5 @@
 <resources>
     <color name="timer_background">#101820</color>
     <color name="timer_status">#FFCC66</color>
+    <color name="menu_background">#F21A2633</color>
 </resources>
