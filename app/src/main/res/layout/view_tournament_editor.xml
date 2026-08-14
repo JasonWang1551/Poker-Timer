@@ -110,6 +110,50 @@
                     style="@style/EditorNumber" />
             </LinearLayout>
 
+            <CheckBox
+                android:id="@+id/has_ante_checkbox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/has_ante"
+                android:textColor="@android:color/white"
+                android:textSize="18sp" />
+
+            <CheckBox
+                android:id="@+id/ante_equals_big_blind_checkbox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/ante_equals_big_blind"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/ante_row"
+                style="@style/EditorRow"
+                android:visibility="gone">
+
+                <TextView
+                    style="@style/EditorLabel"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:text="@string/ante_amount" />
+
+                <EditText
+                    android:id="@+id/editor_ante"
+                    style="@style/EditorNumber" />
+            </LinearLayout>
+
+            <CheckBox
+                android:id="@+id/set_level_time_checkbox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/set_level_time"
+                android:textColor="@android:color/white"
+                android:textSize="18sp" />
+
             <LinearLayout
                 android:id="@+id/time_row"
                 style="@style/EditorRow">

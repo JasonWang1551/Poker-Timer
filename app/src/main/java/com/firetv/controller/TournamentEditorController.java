@@ -39,6 +39,10 @@ public class TournamentEditorController {
     private final EditText editorMinutes;
     private final CheckBox doubleBigBlindCheckbox;
     private final CheckBox indefiniteBreakCheckbox;
+    private final CheckBox setLevelTimeCheckbox;
+    private final CheckBox hasAnteCheckbox;
+    private final CheckBox anteEqualsBigBlindCheckbox;
+    private final EditText editorAnte;
     private final Button moveItemUpButton;
     private final Button moveItemDownButton;
     private final Button removeItemButton;
@@ -47,6 +51,7 @@ public class TournamentEditorController {
     private final View smallBlindRow;
     private final View bigBlindRow;
     private final View timeRow;
+    private final View anteRow;
     private int selectedIndex;
     private boolean populatingEditor;
 
@@ -62,6 +67,10 @@ public class TournamentEditorController {
         editorMinutes = activity.findViewById(R.id.editor_minutes);
         doubleBigBlindCheckbox = activity.findViewById(R.id.double_big_blind_checkbox);
         indefiniteBreakCheckbox = activity.findViewById(R.id.indefinite_break_checkbox);
+        setLevelTimeCheckbox = activity.findViewById(R.id.set_level_time_checkbox);
+        hasAnteCheckbox = activity.findViewById(R.id.has_ante_checkbox);
+        anteEqualsBigBlindCheckbox = activity.findViewById(R.id.ante_equals_big_blind_checkbox);
+        editorAnte = activity.findViewById(R.id.editor_ante);
         moveItemUpButton = activity.findViewById(R.id.move_item_up_button);
         moveItemDownButton = activity.findViewById(R.id.move_item_down_button);
         removeItemButton = activity.findViewById(R.id.remove_item_button);
@@ -70,6 +79,7 @@ public class TournamentEditorController {
         smallBlindRow = activity.findViewById(R.id.small_blind_row);
         bigBlindRow = activity.findViewById(R.id.big_blind_row);
         timeRow = activity.findViewById(R.id.time_row);
+        anteRow = activity.findViewById(R.id.ante_row);
         configureNavigation();
     }
 
@@ -101,6 +111,10 @@ public class TournamentEditorController {
         editorMinutes.setOnKeyListener(returnToLevelList);
         doubleBigBlindCheckbox.setOnKeyListener(returnToLevelList);
         indefiniteBreakCheckbox.setOnKeyListener(returnToLevelList);
+        setLevelTimeCheckbox.setOnKeyListener(returnToLevelList);
+        hasAnteCheckbox.setOnKeyListener(returnToLevelList);
+        anteEqualsBigBlindCheckbox.setOnKeyListener(returnToLevelList);
+        editorAnte.setOnKeyListener(returnToLevelList);
         moveItemUpButton.setOnKeyListener(returnToLevelList);
         moveItemDownButton.setOnKeyListener(returnToLevelList);
         removeItemButton.setOnKeyListener(returnToLevelList);
@@ -127,128 +141,146 @@ public class TournamentEditorController {
                 applySelectedEdits();
             }
         });
+        setLevelTimeCheckbox.setOnCheckedChangeListener((button, isChecked) -> {
+            updateTimeEditorVisibility();
+
+            if (!populatingEditor) {
+                applySelectedEdits();
+            }
+        });
+        hasAnteCheckbox.setOnCheckedChangeListener((button, isChecked) -> {
+            updateAnteEditorVisibility();
+
+            if (!populatingEditor) {
+                applySelectedEdits();
+            }
+        });
+        anteEqualsBigBlindCheckbox.setOnCheckedChangeListener((button, isChecked) -> {
+            updateAnteEditorVisibility();
+
+            if (!populatingEditor) {
+                applySelectedEdits();
+            }
+        });
         addLiveUpdateListener(editorTitle);
         addLiveUpdateListener(editorSmallBlind);
         addLiveUpdateListener(editorBigBlind);
         addLiveUpdateListener(editorMinutes);
+        addLiveUpdateListener(editorAnte);
     }
 
     private boolean moveEditorFocusUp(View currentView) {
-        TournamentLevel level = tournament.getLevel(selectedIndex);
-
         if (currentView == removeItemButton) {
             if (moveItemUpButton.isEnabled()) {
                 moveItemUpButton.requestFocus();
             } else if (moveItemDownButton.isEnabled()) {
                 moveItemDownButton.requestFocus();
             } else if (timeRow.getVisibility() == View.VISIBLE) {
-                editorMinutes.requestFocus();
+                focusLastEditorField();
             } else {
-                indefiniteBreakCheckbox.requestFocus();
+                focusLastEditorField();
             }
 
             return true;
         }
 
         if (currentView == moveItemDownButton || currentView == moveItemUpButton) {
-            if (timeRow.getVisibility() == View.VISIBLE) {
-                editorMinutes.requestFocus();
-            } else {
-                indefiniteBreakCheckbox.requestFocus();
-            }
-
+            focusLastEditorField();
             return true;
         }
 
-        if (currentView == editorMinutes) {
-            if (bigBlindRow.getVisibility() == View.VISIBLE && !level.isBreak()) {
-                editorBigBlind.requestFocus();
-            } else if (!level.isBreak()) {
-                doubleBigBlindCheckbox.requestFocus();
-            } else {
-                indefiniteBreakCheckbox.requestFocus();
-            }
+        return moveWithinEditorFields(currentView, -1);
+    }
+
+    private boolean moveEditorFocusDown(View currentView) {
+        if (currentView == moveItemDownButton || currentView == moveItemUpButton) {
+            removeItemButton.requestFocus();
             return true;
         }
 
-        if (currentView == indefiniteBreakCheckbox) {
-            editorTitle.requestFocus();
+        if (moveWithinEditorFields(currentView, 1)) {
             return true;
         }
 
-        if (currentView == editorBigBlind) {
-            doubleBigBlindCheckbox.requestFocus();
-            return true;
-        }
-
-        if (currentView == doubleBigBlindCheckbox) {
-            editorSmallBlind.requestFocus();
-            return true;
-        }
-
-        if (currentView == editorSmallBlind) {
-            editorTitle.requestFocus();
+        if (isEditorField(currentView)) {
+            focusFirstAvailableAction();
             return true;
         }
 
         return false;
     }
 
-    private boolean moveEditorFocusDown(View currentView) {
+    private boolean moveWithinEditorFields(View currentView, int direction) {
+        List<View> fields = editorFocusOrder();
+        int currentIndex = fields.indexOf(currentView);
+        int targetIndex = currentIndex + direction;
+
+        if (currentIndex < 0 || targetIndex < 0 || targetIndex >= fields.size()) {
+            return false;
+        }
+
+        fields.get(targetIndex).requestFocus();
+        return true;
+    }
+
+    private boolean isEditorField(View view) {
+        return editorFocusOrder().contains(view);
+    }
+
+    private void focusLastEditorField() {
+        List<View> fields = editorFocusOrder();
+
+        if (!fields.isEmpty()) {
+            fields.get(fields.size() - 1).requestFocus();
+        }
+    }
+
+    private List<View> editorFocusOrder() {
+        List<View> fields = new ArrayList<>();
         TournamentLevel level = tournament.getLevel(selectedIndex);
+        fields.add(editorTitle);
 
-        if (currentView == editorTitle) {
-            if (level.isBreak()) {
-                indefiniteBreakCheckbox.requestFocus();
-            } else {
-                editorSmallBlind.requestFocus();
+        if (level.isBreak()) {
+            fields.add(indefiniteBreakCheckbox);
+
+            if (!indefiniteBreakCheckbox.isChecked()) {
+                fields.add(setLevelTimeCheckbox);
+
+                if (setLevelTimeCheckbox.isChecked()) {
+                    fields.add(editorMinutes);
+                }
             }
 
-            return true;
+            return fields;
         }
 
-        if (currentView == editorSmallBlind) {
-            doubleBigBlindCheckbox.requestFocus();
+        fields.add(editorSmallBlind);
+        fields.add(doubleBigBlindCheckbox);
 
-            return true;
+        if (!doubleBigBlindCheckbox.isChecked()) {
+            fields.add(editorBigBlind);
         }
 
-        if (currentView == doubleBigBlindCheckbox) {
-            if (bigBlindRow.getVisibility() == View.VISIBLE) {
-                editorBigBlind.requestFocus();
-            } else {
-                editorMinutes.requestFocus();
+        fields.add(hasAnteCheckbox);
+
+        if (hasAnteCheckbox.isChecked()) {
+            fields.add(anteEqualsBigBlindCheckbox);
+
+            if (!anteEqualsBigBlindCheckbox.isChecked()) {
+                fields.add(editorAnte);
             }
-
-            return true;
         }
 
-        if (currentView == editorBigBlind) {
-            editorMinutes.requestFocus();
-            return true;
+        if (!tournament.isFirstPlayableLevel(selectedIndex)) {
+            fields.add(setLevelTimeCheckbox);
         }
 
-        if (currentView == indefiniteBreakCheckbox) {
-            if (timeRow.getVisibility() == View.VISIBLE) {
-                editorMinutes.requestFocus();
-            } else {
-                focusFirstAvailableAction();
-            }
-
-            return true;
+        if (tournament.isFirstPlayableLevel(selectedIndex)
+                || setLevelTimeCheckbox.isChecked()) {
+            fields.add(editorMinutes);
         }
 
-        if (currentView == editorMinutes) {
-            focusFirstAvailableAction();
-            return true;
-        }
-
-        if (currentView == moveItemDownButton || currentView == moveItemUpButton) {
-            removeItemButton.requestFocus();
-            return true;
-        }
-
-        return false;
+        return fields;
     }
 
     private void focusFirstAvailableAction() {
@@ -322,6 +354,7 @@ public class TournamentEditorController {
                 R.layout.item_tournament_level,
                 levelListContainer,
                 false);
+        button.setId(View.generateViewId());
         updateLevelSelectionView(button, levelIndex, level);
         button.setLayoutParams(levelButtonLayoutParams());
         button.setOnClickListener(view -> {
@@ -349,13 +382,24 @@ public class TournamentEditorController {
 
     private void addCreationRow() {
         LinearLayout row = new LinearLayout(activity);
+        Button addLevelButton = createAddButton(R.string.add_level, false);
+        Button addBreakButton = createAddButton(R.string.add_break, true);
+        addLevelButton.setId(View.generateViewId());
+        addBreakButton.setId(View.generateViewId());
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setLayoutParams(new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
-        row.addView(createAddButton(R.string.add_level, false));
-        row.addView(createAddButton(R.string.add_break, true));
+        row.addView(addLevelButton);
+        row.addView(addBreakButton);
         levelListContainer.addView(row);
+
+        if (!levelButtons.isEmpty()) {
+            View finalLevelButton = levelButtons.get(levelButtons.size() - 1);
+            finalLevelButton.setNextFocusDownId(addLevelButton.getId());
+            addLevelButton.setNextFocusUpId(finalLevelButton.getId());
+            addBreakButton.setNextFocusUpId(finalLevelButton.getId());
+        }
     }
 
     private Button createAddButton(int labelResource, boolean breakLevel) {
@@ -445,17 +489,27 @@ public class TournamentEditorController {
             editorTitle.setText(level.getTitle());
             editorSmallBlind.setText(String.valueOf(level.getSmallBlind()));
             editorBigBlind.setText(String.valueOf(level.getBigBlind()));
-            editorMinutes.setText(String.valueOf(level.getMinutes()));
+            editorMinutes.setText(String.valueOf(
+                    tournament.getEffectiveMinutes(selectedIndex)));
+            editorAnte.setText(String.valueOf(level.getCustomAnte()));
             doubleBigBlindCheckbox.setChecked(level.isBigBlindDoubleSmallBlind());
             indefiniteBreakCheckbox.setChecked(level.isIndefiniteBreak());
+            setLevelTimeCheckbox.setChecked(level.hasOwnTime());
+            hasAnteCheckbox.setChecked(level.hasAnte());
+            anteEqualsBigBlindCheckbox.setChecked(level.isAnteEqualToBigBlind());
         } finally {
             populatingEditor = false;
         }
 
         doubleBigBlindCheckbox.setVisibility(level.isBreak() ? View.GONE : View.VISIBLE);
         indefiniteBreakCheckbox.setVisibility(level.isBreak() ? View.VISIBLE : View.GONE);
+        setLevelTimeCheckbox.setEnabled(
+                !tournament.isFirstPlayableLevel(selectedIndex));
+        hasAnteCheckbox.setVisibility(level.isBreak() ? View.GONE : View.VISIBLE);
+        anteEqualsBigBlindCheckbox.setVisibility(level.isBreak() ? View.GONE : View.VISIBLE);
         smallBlindRow.setVisibility(level.isBreak() ? View.GONE : View.VISIBLE);
         updateBigBlindEditorVisibility();
+        updateAnteEditorVisibility();
         updateTimeEditorVisibility();
         removeItemButton.setText(level.isBreak()
                 ? R.string.remove_break
@@ -472,22 +526,44 @@ public class TournamentEditorController {
         }
 
         TournamentLevel level = tournament.getLevel(selectedIndex);
+        int oldCurrentMinutes = tournament.getEffectiveMinutes(
+                tournament.getCurrentLevelIndex());
+        boolean oldCurrentIndefinite = tournament.getCurrentLevel()
+                .isIndefiniteBreak();
         String title = editorTitle.getText().toString().trim();
         boolean indefiniteBreak = indefiniteBreakCheckbox.isChecked();
+        boolean hasOwnTime = tournament.isFirstPlayableLevel(selectedIndex)
+                || setLevelTimeCheckbox.isChecked();
+        boolean hasAnte = hasAnteCheckbox.isChecked();
+        boolean anteEqualsBigBlind = hasAnte
+                && anteEqualsBigBlindCheckbox.isChecked();
         int minutes = level.getMinutes();
 
-        if (!indefiniteBreak) {
+        if (!indefiniteBreak && hasOwnTime) {
             minutes = positiveValue(editorMinutes, minutes);
+        }
+
+        int ante = level.getCustomAnte();
+
+        if (hasAnte && !anteEqualsBigBlind) {
+            int fallbackAnte = ante > 0 ? ante : level.getBigBlind();
+            ante = positiveValue(editorAnte, fallbackAnte);
         }
 
         boolean changed = !level.getTitle().equals(title)
                 || level.isIndefiniteBreak() != indefiniteBreak
-                || level.getMinutes() != minutes;
-        boolean timingChanged = level.isIndefiniteBreak() != indefiniteBreak
-                || level.getMinutes() != minutes;
+                || level.hasOwnTime() != hasOwnTime
+                || level.getMinutes() != minutes
+                || level.hasAnte() != hasAnte
+                || level.isAnteEqualToBigBlind() != anteEqualsBigBlind
+                || level.getCustomAnte() != ante;
 
         level.setTitle(title);
         level.setIndefiniteBreak(indefiniteBreak);
+        level.setHasOwnTime(hasOwnTime);
+        level.setHasAnte(hasAnte);
+        level.setAnteEqualsBigBlind(anteEqualsBigBlind);
+        level.setAnte(ante);
 
         if (!level.isIndefiniteBreak()) {
             level.setMinutes(minutes);
@@ -517,15 +593,12 @@ public class TournamentEditorController {
             return;
         }
 
-        if (selectedIndex < levelButtons.size()) {
-            updateLevelSelectionView(
-                    levelButtons.get(selectedIndex),
-                    selectedIndex,
-                    level);
-        }
+        updateAllLevelSelectionViews();
 
-        boolean currentTimingChanged = timingChanged
-                && selectedIndex == tournament.getCurrentLevelIndex();
+        boolean currentTimingChanged = oldCurrentMinutes
+                != tournament.getEffectiveMinutes(tournament.getCurrentLevelIndex())
+                || oldCurrentIndefinite != tournament.getCurrentLevel()
+                .isIndefiniteBreak();
         listener.onTournamentChanged(currentTimingChanged);
     }
 
@@ -547,9 +620,41 @@ public class TournamentEditorController {
 
     private void updateTimeEditorVisibility() {
         TournamentLevel level = tournament.getLevel(selectedIndex);
-        boolean showTimeEditor = !level.isBreak()
-                || !indefiniteBreakCheckbox.isChecked();
+        boolean showTimeEditor;
+
+        if (level.isBreak()) {
+            boolean timedBreak = !indefiniteBreakCheckbox.isChecked();
+            setLevelTimeCheckbox.setVisibility(
+                    timedBreak ? View.VISIBLE : View.GONE);
+            showTimeEditor = timedBreak && setLevelTimeCheckbox.isChecked();
+        } else {
+            setLevelTimeCheckbox.setVisibility(View.VISIBLE);
+            showTimeEditor = tournament.isFirstPlayableLevel(selectedIndex)
+                    || setLevelTimeCheckbox.isChecked();
+        }
+
         timeRow.setVisibility(showTimeEditor ? View.VISIBLE : View.GONE);
+    }
+
+    private void updateAnteEditorVisibility() {
+        TournamentLevel level = tournament.getLevel(selectedIndex);
+        boolean showAnteOptions = !level.isBreak() && hasAnteCheckbox.isChecked();
+        anteEqualsBigBlindCheckbox.setVisibility(
+                showAnteOptions ? View.VISIBLE : View.GONE);
+        boolean showCustomAnte = showAnteOptions
+                && !anteEqualsBigBlindCheckbox.isChecked();
+        anteRow.setVisibility(showCustomAnte ? View.VISIBLE : View.GONE);
+    }
+
+    private void updateAllLevelSelectionViews() {
+        int rowCount = Math.min(levelButtons.size(), tournament.size());
+
+        for (int index = 0; index < rowCount; index++) {
+            updateLevelSelectionView(
+                    levelButtons.get(index),
+                    index,
+                    tournament.getLevel(index));
+        }
     }
 
     private String levelButtonText(int index, TournamentLevel level) {
@@ -560,7 +665,7 @@ public class TournamentEditorController {
 
             return activity.getString(
                     R.string.break_list_item,
-                    level.getMinutes());
+                    tournament.getEffectiveMinutes(index));
         }
 
         return activity.getString(
@@ -568,13 +673,14 @@ public class TournamentEditorController {
                 tournament.getPlayableLevelNumber(index),
                 level.getSmallBlind(),
                 level.getBigBlind(),
-                level.getMinutes());
+                tournament.getEffectiveMinutes(index));
     }
 
     private void updateLevelSelectionView(View row, int index, TournamentLevel level) {
         TextView numberView = row.findViewById(R.id.list_item_number);
         TextView titleView = row.findViewById(R.id.list_item_title);
         TextView blindsView = row.findViewById(R.id.list_item_blinds);
+        TextView anteView = row.findViewById(R.id.list_item_ante);
         TextView timeView = row.findViewById(R.id.list_item_time);
         TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(
                 blindsView,
@@ -590,6 +696,7 @@ public class TournamentEditorController {
         if (level.isBreak()) {
             numberView.setText("");
             blindsView.setText(R.string.default_break_title);
+            anteView.setVisibility(View.GONE);
         } else {
             numberView.setText(activity.getString(
                     R.string.level_list_number,
@@ -598,6 +705,15 @@ public class TournamentEditorController {
                     R.string.level_list_blinds,
                     level.getSmallBlind(),
                     level.getBigBlind()));
+
+            if (level.hasAnte()) {
+                anteView.setText(activity.getString(
+                        R.string.ante_display,
+                        level.getAnte()));
+                anteView.setVisibility(View.VISIBLE);
+            } else {
+                anteView.setVisibility(View.GONE);
+            }
         }
 
         if (level.isIndefiniteBreak()) {
@@ -605,7 +721,7 @@ public class TournamentEditorController {
         } else {
             timeView.setText(activity.getString(
                     R.string.level_list_time,
-                    level.getMinutes()));
+                    tournament.getEffectiveMinutes(index)));
         }
     }
 

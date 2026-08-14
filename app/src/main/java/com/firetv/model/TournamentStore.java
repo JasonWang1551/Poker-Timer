@@ -76,6 +76,14 @@ public class TournamentStore {
         return names;
     }
 
+    public void deleteNamed(String name) {
+        JSONObject saved = readSavedObject();
+        saved.remove(name);
+        preferences.edit()
+                .putString(SAVED_TOURNAMENTS_KEY, saved.toString())
+                .apply();
+    }
+
     private JSONObject readSavedObject() {
         String json = preferences.getString(SAVED_TOURNAMENTS_KEY, "{}");
 
@@ -103,6 +111,10 @@ public class TournamentStore {
                 levelJson.put("break", level.isBreak());
                 levelJson.put("doubleBigBlind", level.isBigBlindDoubleSmallBlind());
                 levelJson.put("indefiniteBreak", level.isIndefiniteBreak());
+                levelJson.put("hasOwnTime", level.hasOwnTime());
+                levelJson.put("hasAnte", level.hasAnte());
+                levelJson.put("anteEqualsBigBlind", level.isAnteEqualToBigBlind());
+                levelJson.put("ante", level.getCustomAnte());
                 levels.put(levelJson);
             }
 
@@ -129,7 +141,11 @@ public class TournamentStore {
                         levelJson.optInt("minutes", 10),
                         levelJson.optBoolean("break", false),
                         levelJson.optBoolean("doubleBigBlind", false),
-                        levelJson.optBoolean("indefiniteBreak", false)));
+                        levelJson.optBoolean("indefiniteBreak", false),
+                        levelJson.optBoolean("hasOwnTime", true),
+                        levelJson.optBoolean("hasAnte", false),
+                        levelJson.optBoolean("anteEqualsBigBlind", false),
+                        levelJson.optInt("ante", 0)));
             }
 
             if (levels.isEmpty() || levels.get(0).isBreak()) {

@@ -3,7 +3,6 @@
     <string name="timer_paused">Paused</string>
     <string name="timer_running">Running</string>
     <string name="timer_finished">TIME’S UP!</string>
-    <string name="timer_instructions">Pause starts or stops the timer. Fast Forward or Rewind resets it. Menu opens tournament settings.</string>
     <string name="tournament_menu">Tournament Menu</string>
     <string name="edit_tournament">Edit Tournament</string>
     <string name="tournament_name">Tournament name</string>
@@ -13,6 +12,9 @@
     <string name="tournament_name_required">Enter a tournament name before saving</string>
     <string name="no_saved_tournaments">No saved tournaments</string>
     <string name="choose_tournament">Load Tournament</string>
+    <string name="delete_tournament">Delete</string>
+    <string name="confirm_delete_tournament">Delete “%1$s”? This cannot be undone.</string>
+    <string name="tournament_deleted">Tournament deleted</string>
     <string name="reset_level">Reset Level</string>
     <string name="reset_tournament">Reset Tournament</string>
     <string name="level_number">Level %1$d</string>
@@ -21,10 +23,12 @@
     <string name="break_list_item_indefinite">BREAK | Indefinite</string>
     <string name="level_list_number">%1$d)</string>
     <string name="level_list_blinds">%1$d / %2$d</string>
+    <string name="level_list_blinds_with_ante">%1$d / %2$d\n(%3$d)</string>
     <string name="level_list_time">%1$d min</string>
     <string name="level_number_paused">Level %1$d - Paused</string>
     <string name="break_paused">BREAK - Paused</string>
-    <string name="blinds_amount">Blinds %1$d / %2$d</string>
+    <string name="blinds_amount">%1$d / %2$d</string>
+    <string name="blinds_amount_with_ante">%1$d / %2$d\n(%3$d)</string>
     <string name="titled_level_and_blinds">%1$s   Blinds %2$d / %3$d</string>
     <string name="optional_title">Title (optional)</string>
     <string name="small_blind">Small blind</string>
@@ -33,6 +37,11 @@
     <string name="time_minutes">Length (minutes)</string>
     <string name="indefinite_break">Indefinite break</string>
     <string name="indefinite">Indefinite</string>
+    <string name="set_level_time">Set level time</string>
+    <string name="has_ante">Use ante</string>
+    <string name="ante_equals_big_blind">Ante is equal to the big blind</string>
+    <string name="ante_amount">Ante</string>
+    <string name="ante_display">(Ante %1$d)</string>
     <string name="add_level">+ Level</string>
     <string name="add_break">+ Break</string>
     <string name="default_break_title">BREAK</string>
@@ -42,10 +51,11 @@
     <string name="move_down">Move Down</string>
     <string name="previous_item">Previous\n%1$s</string>
     <string name="next_item">Next\n%1$s</string>
-    <string name="preview_level">%1$s\nBlinds %2$d / %3$d</string>
+    <string name="preview_level">%1$s\n%2$d / %3$d</string>
+    <string name="preview_level_with_ante">%1$s\n%2$d / %3$d (%4$d)</string>
     <string name="preview_break">%1$s</string>
     <string name="preview_break_with_blinds">%1$s\nNext blinds %2$d / %3$d</string>
+    <string name="preview_break_with_blinds_and_ante">%1$s\nNext blinds %2$d / %3$d (%4$d)</string>
     <string name="preview_break_with_previous_blinds">%1$s\nPrevious blinds %2$d / %3$d</string>
-    <string name="last_button_none">Last button pressed: None</string>
-    <string name="last_button_pressed">Last button pressed: %1$s (%2$d)</string>
+    <string name="preview_break_with_previous_blinds_and_ante">%1$s\nPrevious blinds %2$d / %3$d (%4$d)</string>
 </resources>

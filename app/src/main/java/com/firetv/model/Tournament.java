@@ -29,7 +29,8 @@ public class Tournament {
     private String name = "";
 
     public Tournament() {
-        for (int smallBlind : DEFAULT_SMALL_BLINDS) {
+        for (int index = 0; index < DEFAULT_SMALL_BLINDS.length; index++) {
+            int smallBlind = DEFAULT_SMALL_BLINDS[index];
             levels.add(new TournamentLevel(
                     "",
                     smallBlind,
@@ -37,7 +38,11 @@ public class Tournament {
                     DEFAULT_LEVEL_MINUTES,
                     false,
                     true,
-                    false));
+                    false,
+                    index == 0,
+                    false,
+                    false,
+                    0));
         }
     }
 
@@ -65,7 +70,11 @@ public class Tournament {
                     level.getMinutes(),
                     level.isBreak(),
                     level.isBigBlindDoubleSmallBlind(),
-                    level.isIndefiniteBreak()));
+                    level.isIndefiniteBreak(),
+                    level.hasOwnTime(),
+                    level.hasAnte(),
+                    level.isAnteEqualToBigBlind(),
+                    level.getCustomAnte()));
         }
 
         currentLevelIndex = Math.min(other.currentLevelIndex, levels.size() - 1);
@@ -82,6 +91,7 @@ public class Tournament {
 
         levels.clear();
         levels.addAll(replacementLevels);
+        ensureFirstLevelHasOwnTime();
         currentLevelIndex = Math.min(currentLevelIndex, levels.size() - 1);
     }
 
@@ -132,7 +142,11 @@ public class Tournament {
                 previous.getMinutes(),
                 false,
                 previous.isBigBlindDoubleSmallBlind(),
-                false));
+                false,
+                false,
+                previous.hasAnte(),
+                previous.isAnteEqualToBigBlind(),
+                previous.getCustomAnte()));
         return levels.size() - 1;
     }
 
@@ -141,12 +155,55 @@ public class Tournament {
             return levels.size() - 1;
         }
 
-        levels.add(new TournamentLevel("", 0, 0, 10, true, false, false));
+        levels.add(new TournamentLevel(
+                "",
+                0,
+                0,
+                10,
+                true,
+                false,
+                false,
+                true,
+                false,
+                false,
+                0));
         return levels.size() - 1;
     }
 
     public boolean canAddBreak() {
         return !levels.get(levels.size() - 1).isBreak();
+    }
+
+    public int getEffectiveMinutes(int index) {
+        TournamentLevel selectedLevel = levels.get(index);
+
+        if (selectedLevel.hasOwnTime()) {
+            return selectedLevel.getMinutes();
+        }
+
+        for (int position = index - 1; position >= 0; position--) {
+            TournamentLevel previousLevel = levels.get(position);
+
+            if (!previousLevel.isBreak() && previousLevel.hasOwnTime()) {
+                return previousLevel.getMinutes();
+            }
+        }
+
+        return selectedLevel.getMinutes();
+    }
+
+    public boolean isFirstPlayableLevel(int index) {
+        return getPlayableLevelNumber(index) == 1
+                && !levels.get(index).isBreak();
+    }
+
+    private void ensureFirstLevelHasOwnTime() {
+        for (TournamentLevel level : levels) {
+            if (!level.isBreak()) {
+                level.setHasOwnTime(true);
+                return;
+            }
+        }
     }
 
     private TournamentLevel getLastPlayableLevel() {
@@ -187,6 +244,8 @@ public class Tournament {
         if (removeFollowingBreak) {
             levels.remove(0);
         }
+
+        ensureFirstLevelHasOwnTime();
 
         int retainedCurrentIndex = levels.indexOf(currentLevel);
 

@@ -52,7 +52,6 @@ public class MainActivity extends FragmentActivity {
     private TextView tournamentNameTextView;
     private TextView levelTitleTextView;
     private TextView blindsTextView;
-    private TextView lastButtonTextView;
     private TextView previousLevelTextView;
     private TextView nextLevelTextView;
     private EditText tournamentNameEditor;
@@ -87,7 +86,6 @@ public class MainActivity extends FragmentActivity {
         tournamentNameTextView = findViewById(R.id.tournament_name_text);
         levelTitleTextView = findViewById(R.id.level_title_text);
         blindsTextView = findViewById(R.id.blinds_text);
-        lastButtonTextView = findViewById(R.id.last_button);
         previousLevelTextView = findViewById(R.id.previous_level_text);
         nextLevelTextView = findViewById(R.id.next_level_text);
         tournamentNameEditor = findViewById(R.id.menu_tournament_name);
@@ -135,8 +133,6 @@ public class MainActivity extends FragmentActivity {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        showLastKey(keyCode);
-
         if (RemoteKeys.isMenu(keyCode, allowDpadMediaFallback)) {
             handleMenuKey();
             return true;
@@ -167,13 +163,6 @@ public class MainActivity extends FragmentActivity {
         }
 
         return super.onKeyDown(keyCode, event);
-    }
-
-    private void showLastKey(int keyCode) {
-        lastButtonTextView.setText(getString(
-                R.string.last_button_pressed,
-                KeyEvent.keyCodeToString(keyCode),
-                keyCode));
     }
 
     private boolean isAnyMenuOpen() {
@@ -275,10 +264,33 @@ public class MainActivity extends FragmentActivity {
         }
 
         String[] names = savedNames.toArray(new String[0]);
+        int[] selectedIndex = {0};
         new AlertDialog.Builder(this)
                 .setTitle(R.string.choose_tournament)
-                .setItems(names, (dialog, selectedIndex) -> {
-                    loadNamedTournament(names[selectedIndex]);
+                .setSingleChoiceItems(names, selectedIndex[0], (dialog, index) -> {
+                    selectedIndex[0] = index;
+                })
+                .setPositiveButton(R.string.load_tournament, (dialog, button) -> {
+                    loadNamedTournament(names[selectedIndex[0]]);
+                })
+                .setNeutralButton(R.string.delete_tournament, (dialog, button) -> {
+                    confirmDeleteTournament(names[selectedIndex[0]]);
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void confirmDeleteTournament(String name) {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.delete_tournament)
+                .setMessage(getString(R.string.confirm_delete_tournament, name))
+                .setPositiveButton(R.string.delete_tournament, (dialog, button) -> {
+                    tournamentStore.deleteNamed(name);
+                    Toast.makeText(
+                            this,
+                            R.string.tournament_deleted,
+                            Toast.LENGTH_SHORT).show();
+                    showLoadTournamentDialog();
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
@@ -360,7 +372,8 @@ public class MainActivity extends FragmentActivity {
     }
 
     private long currentDurationMs() {
-        return tournament.getCurrentLevel().getMinutes() * 60_000L;
+        return tournament.getEffectiveMinutes(
+                tournament.getCurrentLevelIndex()) * 60_000L;
     }
 
     private void updateLevelText() {
@@ -394,10 +407,7 @@ public class MainActivity extends FragmentActivity {
         levelTextView.setText(paused
                 ? getString(R.string.level_number_paused, levelNumber)
                 : getString(R.string.level_number, levelNumber));
-        blindsTextView.setText(getString(
-                R.string.blinds_amount,
-                level.getSmallBlind(),
-                level.getBigBlind()));
+        blindsTextView.setText(mainBlindsText(level));
         blindsTextView.setVisibility(View.VISIBLE);
         updateAdjacentLevelPreviews();
     }
@@ -440,11 +450,7 @@ public class MainActivity extends FragmentActivity {
                             R.string.level_number,
                             tournament.getPlayableLevelNumber(itemIndex))
                     : level.getTitle();
-            return getString(
-                    R.string.preview_level,
-                    title,
-                    level.getSmallBlind(),
-                    level.getBigBlind());
+            return previewLevelText(title, level);
         }
 
         String breakTitle = level.getTitle().isEmpty()
@@ -459,10 +465,13 @@ public class MainActivity extends FragmentActivity {
             }
 
             return getString(
-                    R.string.preview_break_with_previous_blinds,
+                    previousPlayableLevel.hasAnte()
+                            ? R.string.preview_break_with_previous_blinds_and_ante
+                            : R.string.preview_break_with_previous_blinds,
                     breakTitle,
                     previousPlayableLevel.getSmallBlind(),
-                    previousPlayableLevel.getBigBlind());
+                    previousPlayableLevel.getBigBlind(),
+                    previousPlayableLevel.getAnte());
         }
 
         TournamentLevel nextPlayableLevel = tournament.getNextPlayableLevelAfter(itemIndex);
@@ -472,10 +481,45 @@ public class MainActivity extends FragmentActivity {
         }
 
         return getString(
-                R.string.preview_break_with_blinds,
+                nextPlayableLevel.hasAnte()
+                        ? R.string.preview_break_with_blinds_and_ante
+                        : R.string.preview_break_with_blinds,
                 breakTitle,
                 nextPlayableLevel.getSmallBlind(),
-                nextPlayableLevel.getBigBlind());
+                nextPlayableLevel.getBigBlind(),
+                nextPlayableLevel.getAnte());
+    }
+
+    private String mainBlindsText(TournamentLevel level) {
+        if (level.hasAnte()) {
+            return getString(
+                    R.string.blinds_amount_with_ante,
+                    level.getSmallBlind(),
+                    level.getBigBlind(),
+                    level.getAnte());
+        }
+
+        return getString(
+                R.string.blinds_amount,
+                level.getSmallBlind(),
+                level.getBigBlind());
+    }
+
+    private String previewLevelText(String title, TournamentLevel level) {
+        if (level.hasAnte()) {
+            return getString(
+                    R.string.preview_level_with_ante,
+                    title,
+                    level.getSmallBlind(),
+                    level.getBigBlind(),
+                    level.getAnte());
+        }
+
+        return getString(
+                R.string.preview_level,
+                title,
+                level.getSmallBlind(),
+                level.getBigBlind());
     }
 
     private void updateStatusText() {
@@ -519,8 +563,6 @@ public class MainActivity extends FragmentActivity {
             timer.finish(currentDurationMs());
             hasAlerted = true;
             timerTextView.setText("00:00");
-            levelTextView.setText(R.string.timer_finished);
-            blindsTextView.setVisibility(View.GONE);
             return;
         }
 
@@ -541,8 +583,6 @@ public class MainActivity extends FragmentActivity {
             resetLevel();
         } else {
             timer.pause();
-            levelTextView.setText(R.string.timer_finished);
-            blindsTextView.setVisibility(View.GONE);
         }
     }
 

@@ -20,7 +20,7 @@
             android:layout_height="wrap_content"
             android:text="@string/app_name"
             android:textColor="@android:color/white"
-            android:textSize="28sp"
+            android:textSize="30sp"
             android:textStyle="bold" />
 
         <TextView
@@ -30,8 +30,8 @@
             android:layout_marginTop="12dp"
             android:textColor="@android:color/white"
             android:textSize="28sp"
-            android:textStyle="bold"
-            android:visibility="gone"
+            android:textStyle="normal|italic"
+            android:visibility="visible"
             tools:text="Final Table" />
 
         <TextView
@@ -60,27 +60,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:textColor="@android:color/white"
-            android:textSize="22sp"
-            tools:text="Blinds 100 / 200" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
             android:gravity="center"
-            android:text="@string/timer_instructions"
+            android:textAlignment="center"
             android:textColor="@android:color/white"
-            android:textSize="18sp" />
-
-        <TextView
-            android:id="@+id/last_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:text="@string/last_button_none"
-            android:textColor="#B0FFFFFF"
-            android:textSize="16sp" />
+            android:textSize="48sp"
+            tools:text="Blinds 100 / 200" />
     </LinearLayout>
 
     <TextView

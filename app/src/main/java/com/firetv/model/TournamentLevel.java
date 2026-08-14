@@ -8,6 +8,10 @@ public class TournamentLevel {
     private final boolean breakLevel;
     private boolean bigBlindDoubleSmallBlind;
     private boolean indefiniteBreak;
+    private boolean hasOwnTime;
+    private boolean hasAnte;
+    private boolean anteEqualsBigBlind;
+    private int ante;
 
     public TournamentLevel(
             String title,
@@ -16,7 +20,11 @@ public class TournamentLevel {
             int minutes,
             boolean breakLevel,
             boolean bigBlindDoubleSmallBlind,
-            boolean indefiniteBreak) {
+            boolean indefiniteBreak,
+            boolean hasOwnTime,
+            boolean hasAnte,
+            boolean anteEqualsBigBlind,
+            int ante) {
         this.title = title;
         this.smallBlind = smallBlind;
         this.bigBlind = bigBlind;
@@ -24,6 +32,10 @@ public class TournamentLevel {
         this.breakLevel = breakLevel;
         this.bigBlindDoubleSmallBlind = bigBlindDoubleSmallBlind;
         this.indefiniteBreak = indefiniteBreak;
+        this.hasOwnTime = hasOwnTime;
+        this.hasAnte = hasAnte;
+        this.anteEqualsBigBlind = anteEqualsBigBlind;
+        this.ante = ante;
     }
 
     public String getTitle() {
@@ -76,5 +88,45 @@ public class TournamentLevel {
 
     public void setIndefiniteBreak(boolean indefinite) {
         indefiniteBreak = breakLevel && indefinite;
+    }
+
+    public boolean hasOwnTime() {
+        return hasOwnTime;
+    }
+
+    public void setHasOwnTime(boolean enabled) {
+        hasOwnTime = enabled;
+    }
+
+    public boolean hasAnte() {
+        return !breakLevel && hasAnte;
+    }
+
+    public void setHasAnte(boolean enabled) {
+        hasAnte = !breakLevel && enabled;
+    }
+
+    public boolean isAnteEqualToBigBlind() {
+        return hasAnte() && anteEqualsBigBlind;
+    }
+
+    public void setAnteEqualsBigBlind(boolean enabled) {
+        anteEqualsBigBlind = !breakLevel && enabled;
+    }
+
+    public int getAnte() {
+        if (isAnteEqualToBigBlind()) {
+            return bigBlind;
+        }
+
+        return ante;
+    }
+
+    public int getCustomAnte() {
+        return ante;
+    }
+
+    public void setAnte(int ante) {
+        this.ante = ante;
     }
 }
