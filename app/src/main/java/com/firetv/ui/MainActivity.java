@@ -7,8 +7,11 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewParent;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -16,6 +19,7 @@ import android.widget.Toast;
 import androidx.fragment.app.FragmentActivity;
 
 import com.firetv.R;
+import com.firetv.controller.MainScreenControlsController;
 import com.firetv.controller.RemoteKeys;
 import com.firetv.controller.TournamentEditorController;
 import com.firetv.model.CountdownTimer;
@@ -29,7 +33,7 @@ public class MainActivity extends FragmentActivity {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Tournament tournament = new Tournament();
     private final CountdownTimer timer = new CountdownTimer();
-    private static final long DOUBLE_PRESS_WINDOW_MS = 400L;
+    private static final long DOUBLE_PRESS_WINDOW_MS = 1000L;
     private boolean waitingForSecondRewind;
 
     private final Runnable clearRewindWindowRunnable = new Runnable() {
@@ -56,6 +60,8 @@ public class MainActivity extends FragmentActivity {
     private TextView nextLevelTextView;
     private EditText tournamentNameEditor;
     private View mainMenu;
+    private View editTournamentButton;
+    private MainScreenControlsController mainScreenControls;
     private TournamentEditorController editorController;
     private TournamentStore tournamentStore;
     private boolean allowDpadMediaFallback;
@@ -68,16 +74,26 @@ public class MainActivity extends FragmentActivity {
         tournamentStore = new TournamentStore(this);
         tournament.replaceWith(tournamentStore.loadCurrent());
         bindViews();
+        mainScreenControls = new MainScreenControlsController(
+                previousLevelTextView,
+                findViewById(R.id.current_level_control),
+                nextLevelTextView,
+                this::goToPreviousLevel,
+                this::toggleTimer,
+                this::advanceLevel,
+                this::openMainMenu);
         configureMenus();
 
         editorController = new TournamentEditorController(
                 this,
                 tournament,
-                this::handleTournamentChange);
+                this::handleTournamentChange,
+                this::returnFromEditorToMainMenu);
         allowDpadMediaFallback = !"Amazon".equalsIgnoreCase(Build.MANUFACTURER);
         updateLevelText();
         updateStatusText();
         updateTimerText();
+        mainScreenControls.requestInitialFocus();
     }
 
     private void bindViews() {
@@ -90,10 +106,36 @@ public class MainActivity extends FragmentActivity {
         nextLevelTextView = findViewById(R.id.next_level_text);
         tournamentNameEditor = findViewById(R.id.menu_tournament_name);
         mainMenu = findViewById(R.id.main_menu);
+        editTournamentButton = findViewById(R.id.edit_tournament_button);
     }
 
     private void configureMenus() {
-        findViewById(R.id.edit_tournament_button).setOnClickListener(view -> {
+        tournamentNameEditor.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(
+                    CharSequence text,
+                    int start,
+                    int count,
+                    int after) {
+            }
+
+            @Override
+            public void onTextChanged(
+                    CharSequence text,
+                    int start,
+                    int before,
+                    int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                tournament.setName(editable.toString().trim());
+                updateLevelText();
+                persistCurrentTournament();
+            }
+        });
+
+        editTournamentButton.setOnClickListener(view -> {
             openEditor();
         });
         findViewById(R.id.save_tournament_button).setOnClickListener(view -> {
@@ -110,6 +152,51 @@ public class MainActivity extends FragmentActivity {
             resetTournament();
             closeMainMenu();
         });
+
+        View.OnKeyListener closeMenuOnLeft = (view, keyCode, event) -> {
+            if (event.getAction() != KeyEvent.ACTION_DOWN) {
+                return false;
+            }
+
+            if (view.getId() == R.id.load_tournament_button
+                    && keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+                findViewById(R.id.save_tournament_button).requestFocus();
+                return true;
+            }
+
+            if (view.getId() == R.id.save_tournament_button
+                    && keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+                findViewById(R.id.load_tournament_button).requestFocus();
+                return true;
+            }
+
+            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+                closeMainMenu();
+                return true;
+            }
+
+            if (view.getId() == R.id.reset_tournament_button
+                    && keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                return true;
+            }
+
+            if (view == tournamentNameEditor
+                    && keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                return true;
+            }
+
+            if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+                return true;
+            }
+
+            return false;
+        };
+        tournamentNameEditor.setOnKeyListener(closeMenuOnLeft);
+        findViewById(R.id.save_tournament_button).setOnKeyListener(closeMenuOnLeft);
+        findViewById(R.id.load_tournament_button).setOnKeyListener(closeMenuOnLeft);
+        editTournamentButton.setOnKeyListener(closeMenuOnLeft);
+        findViewById(R.id.reset_level_button).setOnKeyListener(closeMenuOnLeft);
+        findViewById(R.id.reset_tournament_button).setOnKeyListener(closeMenuOnLeft);
     }
 
     @Override
@@ -124,6 +211,8 @@ public class MainActivity extends FragmentActivity {
         super.onPause();
 
         handler.removeCallbacks(clearRewindWindowRunnable);
+        mainScreenControls.stop();
+
         waitingForSecondRewind = false;
         timer.pause();
         handler.removeCallbacks(tickRunnable);
@@ -144,6 +233,10 @@ public class MainActivity extends FragmentActivity {
         }
 
         if (isAnyMenuOpen()) {
+            if (wouldLeaveOpenMenu(keyCode)) {
+                return true;
+            }
+
             return super.onKeyDown(keyCode, event);
         }
 
@@ -163,6 +256,53 @@ public class MainActivity extends FragmentActivity {
         }
 
         return super.onKeyDown(keyCode, event);
+    }
+
+    private boolean wouldLeaveOpenMenu(int keyCode) {
+        int focusDirection;
+
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+                focusDirection = View.FOCUS_LEFT;
+                break;
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                focusDirection = View.FOCUS_RIGHT;
+                break;
+            case KeyEvent.KEYCODE_DPAD_UP:
+                focusDirection = View.FOCUS_UP;
+                break;
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+                focusDirection = View.FOCUS_DOWN;
+                break;
+            default:
+                return false;
+        }
+
+        View focusedView = getCurrentFocus();
+
+        if (focusedView == null) {
+            return true;
+        }
+
+        View nextFocus = focusedView.focusSearch(focusDirection);
+        View openMenu = editorController.isOpen()
+                ? findViewById(R.id.edit_menu)
+                : mainMenu;
+        return nextFocus == null || !isDescendantOf(nextFocus, openMenu);
+    }
+
+    private boolean isDescendantOf(View view, View ancestor) {
+        ViewParent parent = view.getParent();
+
+        while (parent != null) {
+            if (parent == ancestor) {
+                return true;
+            }
+
+            parent = parent.getParent();
+        }
+
+        return false;
     }
 
     private boolean isAnyMenuOpen() {
@@ -214,6 +354,8 @@ public class MainActivity extends FragmentActivity {
     }
 
     private void openMainMenu() {
+        mainScreenControls.rememberControlBeforeMenu(getCurrentFocus());
+
         mainMenu.setVisibility(View.VISIBLE);
         tournamentNameEditor.setText(tournament.getName());
         tournamentNameEditor.requestFocus();
@@ -225,6 +367,12 @@ public class MainActivity extends FragmentActivity {
         }
 
         mainMenu.setVisibility(View.GONE);
+        mainScreenControls.restoreFocusAfterMenu();
+    }
+
+    private void returnFromEditorToMainMenu() {
+        openMainMenu();
+        editTournamentButton.requestFocus();
     }
 
     private void applyTournamentName() {
@@ -263,18 +411,48 @@ public class MainActivity extends FragmentActivity {
             return;
         }
 
+        if (!tournamentStore.isSaved(tournament)) {
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.unsaved_tournament)
+                    .setMessage(R.string.confirm_load_over_unsaved_tournament)
+                    .setPositiveButton(
+                            R.string.continue_loading,
+                            (dialog, button) -> showLoadTournamentChoices(savedNames))
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show();
+            return;
+        }
+
+        showLoadTournamentChoices(savedNames);
+    }
+
+    private void showLoadTournamentChoices(List<String> savedNames) {
         String[] names = savedNames.toArray(new String[0]);
-        int[] selectedIndex = {0};
+        int[] selectedIndex = {savedNames.indexOf(tournament.getName())};
         new AlertDialog.Builder(this)
                 .setTitle(R.string.choose_tournament)
                 .setSingleChoiceItems(names, selectedIndex[0], (dialog, index) -> {
                     selectedIndex[0] = index;
                 })
                 .setPositiveButton(R.string.load_tournament, (dialog, button) -> {
-                    loadNamedTournament(names[selectedIndex[0]]);
+                    if (selectedIndex[0] >= 0) {
+                        loadNamedTournament(names[selectedIndex[0]]);
+                    } else {
+                        Toast.makeText(
+                                this,
+                                R.string.choose_tournament_first,
+                                Toast.LENGTH_SHORT).show();
+                    }
                 })
                 .setNeutralButton(R.string.delete_tournament, (dialog, button) -> {
-                    confirmDeleteTournament(names[selectedIndex[0]]);
+                    if (selectedIndex[0] >= 0) {
+                        confirmDeleteTournament(names[selectedIndex[0]]);
+                    } else {
+                        Toast.makeText(
+                                this,
+                                R.string.choose_tournament_first,
+                                Toast.LENGTH_SHORT).show();
+                    }
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
@@ -290,7 +468,16 @@ public class MainActivity extends FragmentActivity {
                             this,
                             R.string.tournament_deleted,
                             Toast.LENGTH_SHORT).show();
-                    showLoadTournamentDialog();
+                    List<String> remainingNames = tournamentStore.getSavedNames();
+
+                    if (remainingNames.isEmpty()) {
+                        Toast.makeText(
+                                this,
+                                R.string.no_saved_tournaments,
+                                Toast.LENGTH_SHORT).show();
+                    } else {
+                        showLoadTournamentChoices(remainingNames);
+                    }
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();

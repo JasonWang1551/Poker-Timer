@@ -19,7 +19,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/app_name"
-            android:textColor="@android:color/white"
+            android:textColor="@color/text_primary"
             android:textSize="30sp"
             android:textStyle="bold" />
 
@@ -28,43 +28,55 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:textColor="@android:color/white"
+            android:textColor="@color/text_primary"
             android:textSize="28sp"
             android:textStyle="normal|italic"
             android:visibility="visible"
             tools:text="Final Table" />
 
-        <TextView
-            android:id="@+id/timer_text"
+        <LinearLayout
+            android:id="@+id/current_level_control"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:fontFamily="monospace"
-            android:text="10:00"
-            android:textColor="@android:color/white"
-            android:textSize="64sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/level_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:textColor="@color/timer_status"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            tools:text="Level 5 - Paused" />
-
-        <TextView
-            android:id="@+id/blinds_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:background="@drawable/main_control_background"
+            android:clickable="true"
+            android:focusable="true"
             android:gravity="center"
-            android:textAlignment="center"
-            android:textColor="@android:color/white"
-            android:textSize="48sp"
-            tools:text="Blinds 100 / 200" />
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/timer_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:text="10:00"
+                android:textColor="@color/text_primary"
+                android:textSize="64sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/level_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:textColor="@color/timer_status"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                tools:text="Level 5 - Paused" />
+
+            <TextView
+                android:id="@+id/blinds_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:textAlignment="center"
+                android:textColor="@color/text_primary"
+                android:textSize="48sp"
+                tools:text="Blinds 100 / 200" />
+        </LinearLayout>
     </LinearLayout>
 
     <TextView
@@ -73,8 +85,12 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|start"
         android:layout_margin="28dp"
+        android:background="@drawable/main_control_background"
+        android:clickable="true"
+        android:focusable="true"
         android:gravity="start"
-        android:textColor="@android:color/white"
+        android:padding="12dp"
+        android:textColor="@color/text_primary"
         android:textSize="18sp"
         android:visibility="gone"
         tools:text="Previous: Level 1 • 25 / 50" />
@@ -85,8 +101,12 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="28dp"
+        android:background="@drawable/main_control_background"
+        android:clickable="true"
+        android:focusable="true"
         android:gravity="end"
-        android:textColor="@android:color/white"
+        android:padding="12dp"
+        android:textColor="@color/text_primary"
         android:textSize="18sp"
         android:visibility="gone"
         tools:text="Next: Level 2 • 50 / 100" />

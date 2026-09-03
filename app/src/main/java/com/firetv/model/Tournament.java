@@ -41,8 +41,8 @@ public class Tournament {
                     false,
                     index == 0,
                     false,
-                    false,
-                    0));
+                    true,
+                    smallBlind*2));
         }
     }
 
@@ -109,6 +109,35 @@ public class Tournament {
 
     public int size() {
         return levels.size();
+    }
+
+    public boolean hasSameConfigurationAs(Tournament other) {
+        if (other == null || !name.equals(other.name) || levels.size() != other.levels.size()) {
+            return false;
+        }
+
+        for (int index = 0; index < levels.size(); index++) {
+            TournamentLevel level = levels.get(index);
+            TournamentLevel otherLevel = other.levels.get(index);
+
+            if (!level.getTitle().equals(otherLevel.getTitle())
+                    || level.getSmallBlind() != otherLevel.getSmallBlind()
+                    || level.getBigBlind() != otherLevel.getBigBlind()
+                    || level.getMinutes() != otherLevel.getMinutes()
+                    || level.isBreak() != otherLevel.isBreak()
+                    || level.isBigBlindDoubleSmallBlind()
+                    != otherLevel.isBigBlindDoubleSmallBlind()
+                    || level.isIndefiniteBreak() != otherLevel.isIndefiniteBreak()
+                    || level.hasOwnTime() != otherLevel.hasOwnTime()
+                    || level.hasAnte() != otherLevel.hasAnte()
+                    || level.isAnteEqualToBigBlind()
+                    != otherLevel.isAnteEqualToBigBlind()
+                    || level.getCustomAnte() != otherLevel.getCustomAnte()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public boolean advance() {
@@ -274,20 +303,19 @@ public class Tournament {
         TournamentLevel currentLevel = getCurrentLevel();
         TournamentLevel movedLevel = levels.remove(fromIndex);
         levels.add(boundedTarget, movedLevel);
+        ensureFirstLevelHasOwnTime();
         currentLevelIndex = levels.indexOf(currentLevel);
         return boundedTarget;
     }
 
     public boolean canMove(int index, int direction) {
-        TournamentLevel level = levels.get(index);
-
-        if (!level.isBreak() || direction == 0) {
+        if (direction == 0) {
             return false;
         }
 
         int targetIndex = index + direction;
 
-        if (targetIndex <= 0 || targetIndex >= levels.size()) {
+        if (targetIndex < 0 || targetIndex >= levels.size()) {
             return false;
         }
 
@@ -295,11 +323,8 @@ public class Tournament {
         TournamentLevel movedLevel = proposedOrder.remove(index);
         proposedOrder.add(targetIndex, movedLevel);
 
-        for (int position = 1; position < proposedOrder.size(); position++) {
-            if (proposedOrder.get(position).isBreak()
-                    && proposedOrder.get(position - 1).isBreak()) {
-                return false;
-            }
+        if (proposedOrder.get(0).isBreak()) {
+            return false;
         }
 
         return true;

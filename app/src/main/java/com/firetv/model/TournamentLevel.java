@@ -107,7 +107,7 @@ public class TournamentLevel {
     }
 
     public boolean isAnteEqualToBigBlind() {
-        return hasAnte() && anteEqualsBigBlind;
+        return !breakLevel && anteEqualsBigBlind;
     }
 
     public void setAnteEqualsBigBlind(boolean enabled) {

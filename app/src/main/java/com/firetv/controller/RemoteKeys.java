@@ -15,18 +15,18 @@ public final class RemoteKeys {
     public static boolean isPause(int keyCode, boolean allowDpadFallback) {
         return keyCode == KeyEvent.KEYCODE_MEDIA_PAUSE
                 || keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE
-                || (allowDpadFallback && keyCode == KeyEvent.KEYCODE_DPAD_CENTER);
+                || (allowDpadFallback && keyCode == KeyEvent.KEYCODE_SPACE);
     }
 
     public static boolean isRewind(int keyCode, boolean allowDpadFallback) {
         return keyCode == KeyEvent.KEYCODE_MEDIA_REWIND
                 || (allowDpadFallback
-                && keyCode == KeyEvent.KEYCODE_DPAD_LEFT);
+                && keyCode == KeyEvent.KEYCODE_R);
     }
 
     public static boolean isForward(int keyCode, boolean allowDpadFallback) {
         return keyCode == KeyEvent.KEYCODE_MEDIA_FAST_FORWARD
                 || (allowDpadFallback
-                && keyCode == KeyEvent.KEYCODE_DPAD_RIGHT);
+                && keyCode == KeyEvent.KEYCODE_F);
     }
 }

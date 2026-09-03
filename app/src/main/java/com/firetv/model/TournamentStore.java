@@ -16,6 +16,7 @@ public class TournamentStore {
     private static final String PREFERENCES_NAME = "poker_tournaments";
     private static final String CURRENT_TOURNAMENT_KEY = "current_tournament";
     private static final String SAVED_TOURNAMENTS_KEY = "saved_tournaments";
+    private static final int SCHEMA_VERSION = 2;
 
     private final SharedPreferences preferences;
 
@@ -63,6 +64,14 @@ public class TournamentStore {
         }
     }
 
+    public boolean isSaved(Tournament tournament) {
+        if (tournament.getName().isEmpty()) {
+            return false;
+        }
+
+        return tournament.hasSameConfigurationAs(loadNamed(tournament.getName()));
+    }
+
     public List<String> getSavedNames() {
         JSONObject saved = readSavedObject();
         Iterator<String> keys = saved.keys();
@@ -99,6 +108,7 @@ public class TournamentStore {
         JSONArray levels = new JSONArray();
 
         try {
+            root.put("schemaVersion", SCHEMA_VERSION);
             root.put("name", tournament.getName());
             root.put("currentLevelIndex", tournament.getCurrentLevelIndex());
 
@@ -131,9 +141,19 @@ public class TournamentStore {
             JSONObject root = new JSONObject(json);
             JSONArray levelArray = root.getJSONArray("levels");
             List<TournamentLevel> levels = new ArrayList<>();
+            int schemaVersion = root.optInt("schemaVersion", 1);
 
             for (int index = 0; index < levelArray.length(); index++) {
                 JSONObject levelJson = levelArray.getJSONObject(index);
+                boolean hasAnte = levelJson.optBoolean("hasAnte", false);
+                boolean anteEqualsBigBlind = levelJson.optBoolean(
+                        "anteEqualsBigBlind",
+                        true);
+
+                if (schemaVersion < SCHEMA_VERSION && !hasAnte) {
+                    anteEqualsBigBlind = true;
+                }
+
                 levels.add(new TournamentLevel(
                         levelJson.optString("title", ""),
                         levelJson.optInt("smallBlind", 25),
@@ -143,8 +163,8 @@ public class TournamentStore {
                         levelJson.optBoolean("doubleBigBlind", false),
                         levelJson.optBoolean("indefiniteBreak", false),
                         levelJson.optBoolean("hasOwnTime", true),
-                        levelJson.optBoolean("hasAnte", false),
-                        levelJson.optBoolean("anteEqualsBigBlind", false),
+                        hasAnte,
+                        anteEqualsBigBlind,
                         levelJson.optInt("ante", 0)));
             }
 

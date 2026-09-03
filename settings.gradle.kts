@@ -21,4 +21,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "Poker Timer"
 include(":app")
- 

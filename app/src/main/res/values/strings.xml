@@ -12,6 +12,10 @@
     <string name="tournament_name_required">Enter a tournament name before saving</string>
     <string name="no_saved_tournaments">No saved tournaments</string>
     <string name="choose_tournament">Load Tournament</string>
+    <string name="choose_tournament_first">Choose a tournament first</string>
+    <string name="unsaved_tournament">Unsaved tournament</string>
+    <string name="confirm_load_over_unsaved_tournament">Loading another tournament will discard your unsaved changes. Continue?</string>
+    <string name="continue_loading">Continue</string>
     <string name="delete_tournament">Delete</string>
     <string name="confirm_delete_tournament">Delete “%1$s”? This cannot be undone.</string>
     <string name="tournament_deleted">Tournament deleted</string>
@@ -44,6 +48,7 @@
     <string name="ante_display">(Ante %1$d)</string>
     <string name="add_level">+ Level</string>
     <string name="add_break">+ Break</string>
+    <string name="back_to_menu">Back to Menu</string>
     <string name="default_break_title">BREAK</string>
     <string name="remove_level">Remove Level</string>
     <string name="remove_break">Remove Break</string>

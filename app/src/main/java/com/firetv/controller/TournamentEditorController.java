@@ -6,11 +6,13 @@ import android.text.TextWatcher;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.util.TypedValue;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.core.widget.TextViewCompat;
@@ -30,9 +32,11 @@ public class TournamentEditorController {
     private final Activity activity;
     private final Tournament tournament;
     private final Listener listener;
+    private final Runnable returnToMainMenu;
     private final List<View> levelButtons = new ArrayList<>();
     private final View editMenu;
     private final TextView editorHeading;
+    private final TextView editorTitleLabel;
     private final EditText editorTitle;
     private final EditText editorSmallBlind;
     private final EditText editorBigBlind;
@@ -47,6 +51,7 @@ public class TournamentEditorController {
     private final Button moveItemDownButton;
     private final Button removeItemButton;
     private final View moveItemRow;
+    private final ScrollView levelListScroll;
     private final LinearLayout levelListContainer;
     private final View smallBlindRow;
     private final View bigBlindRow;
@@ -55,12 +60,18 @@ public class TournamentEditorController {
     private int selectedIndex;
     private boolean populatingEditor;
 
-    public TournamentEditorController(Activity activity, Tournament tournament, Listener listener) {
+    public TournamentEditorController(
+            Activity activity,
+            Tournament tournament,
+            Listener listener,
+            Runnable returnToMainMenu) {
         this.activity = activity;
         this.tournament = tournament;
         this.listener = listener;
+        this.returnToMainMenu = returnToMainMenu;
         editMenu = activity.findViewById(R.id.edit_menu);
         editorHeading = activity.findViewById(R.id.editor_heading);
+        editorTitleLabel = activity.findViewById(R.id.editor_title_label);
         editorTitle = activity.findViewById(R.id.editor_title);
         editorSmallBlind = activity.findViewById(R.id.editor_small_blind);
         editorBigBlind = activity.findViewById(R.id.editor_big_blind);
@@ -75,6 +86,7 @@ public class TournamentEditorController {
         moveItemDownButton = activity.findViewById(R.id.move_item_down_button);
         removeItemButton = activity.findViewById(R.id.remove_item_button);
         moveItemRow = activity.findViewById(R.id.move_item_row);
+        levelListScroll = activity.findViewById(R.id.level_list_scroll);
         levelListContainer = activity.findViewById(R.id.level_list_container);
         smallBlindRow = activity.findViewById(R.id.small_blind_row);
         bigBlindRow = activity.findViewById(R.id.big_blind_row);
@@ -90,6 +102,11 @@ public class TournamentEditorController {
             }
 
             if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+                if (view == moveItemDownButton && moveItemUpButton.isEnabled()) {
+                    moveItemUpButton.requestFocus();
+                    return true;
+                }
+
                 focusSelectedButton();
                 return true;
             }
@@ -118,11 +135,25 @@ public class TournamentEditorController {
         moveItemUpButton.setOnKeyListener(returnToLevelList);
         moveItemDownButton.setOnKeyListener(returnToLevelList);
         removeItemButton.setOnKeyListener(returnToLevelList);
+        editorTitle.setNextFocusRightId(editorTitle.getId());
+        editorSmallBlind.setNextFocusRightId(editorSmallBlind.getId());
+        editorBigBlind.setNextFocusRightId(editorBigBlind.getId());
+        editorMinutes.setNextFocusRightId(editorMinutes.getId());
+        doubleBigBlindCheckbox.setNextFocusRightId(doubleBigBlindCheckbox.getId());
+        indefiniteBreakCheckbox.setNextFocusRightId(indefiniteBreakCheckbox.getId());
+        setLevelTimeCheckbox.setNextFocusRightId(setLevelTimeCheckbox.getId());
+        hasAnteCheckbox.setNextFocusRightId(hasAnteCheckbox.getId());
+        anteEqualsBigBlindCheckbox.setNextFocusRightId(
+                anteEqualsBigBlindCheckbox.getId());
+        editorAnte.setNextFocusRightId(editorAnte.getId());
+        moveItemUpButton.setNextFocusRightId(moveItemDownButton.getId());
+        moveItemDownButton.setNextFocusRightId(moveItemDownButton.getId());
+        removeItemButton.setNextFocusRightId(removeItemButton.getId());
         moveItemUpButton.setOnClickListener(view -> {
-            moveSelectedItem(-1);
+            moveSelectedItem(-1, moveItemUpButton);
         });
         moveItemDownButton.setOnClickListener(view -> {
-            moveSelectedItem(1);
+            moveSelectedItem(1, moveItemDownButton);
         });
         removeItemButton.setOnClickListener(view -> {
             removeSelectedItem();
@@ -164,9 +195,9 @@ public class TournamentEditorController {
         });
         addLiveUpdateListener(editorTitle);
         addLiveUpdateListener(editorSmallBlind);
-        addLiveUpdateListener(editorBigBlind);
+        addBigBlindLiveUpdateListener();
         addLiveUpdateListener(editorMinutes);
-        addLiveUpdateListener(editorAnte);
+        addAnteLiveUpdateListener();
     }
 
     private boolean moveEditorFocusUp(View currentView) {
@@ -189,10 +220,19 @@ public class TournamentEditorController {
             return true;
         }
 
-        return moveWithinEditorFields(currentView, -1);
+        if (isEditorField(currentView)) {
+            moveWithinEditorFields(currentView, -1);
+            return true;
+        }
+
+        return false;
     }
 
     private boolean moveEditorFocusDown(View currentView) {
+        if (currentView == removeItemButton) {
+            return true;
+        }
+
         if (currentView == moveItemDownButton || currentView == moveItemUpButton) {
             removeItemButton.requestFocus();
             return true;
@@ -238,7 +278,6 @@ public class TournamentEditorController {
     private List<View> editorFocusOrder() {
         List<View> fields = new ArrayList<>();
         TournamentLevel level = tournament.getLevel(selectedIndex);
-        fields.add(editorTitle);
 
         if (level.isBreak()) {
             fields.add(indefiniteBreakCheckbox);
@@ -256,19 +295,13 @@ public class TournamentEditorController {
 
         fields.add(editorSmallBlind);
         fields.add(doubleBigBlindCheckbox);
-
-        if (!doubleBigBlindCheckbox.isChecked()) {
-            fields.add(editorBigBlind);
-        }
+        fields.add(editorBigBlind);
 
         fields.add(hasAnteCheckbox);
 
         if (hasAnteCheckbox.isChecked()) {
             fields.add(anteEqualsBigBlindCheckbox);
-
-            if (!anteEqualsBigBlindCheckbox.isChecked()) {
-                fields.add(editorAnte);
-            }
+            fields.add(editorAnte);
         }
 
         if (!tournament.isFirstPlayableLevel(selectedIndex)) {
@@ -320,6 +353,72 @@ public class TournamentEditorController {
         });
     }
 
+    private void addBigBlindLiveUpdateListener() {
+        editorBigBlind.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(
+                    CharSequence text,
+                    int start,
+                    int count,
+                    int after) {
+            }
+
+            @Override
+            public void onTextChanged(
+                    CharSequence text,
+                    int start,
+                    int before,
+                    int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                if (populatingEditor) {
+                    return;
+                }
+
+                if (doubleBigBlindCheckbox.isChecked()) {
+                    doubleBigBlindCheckbox.setChecked(false);
+                } else {
+                    applySelectedEdits();
+                }
+            }
+        });
+    }
+
+    private void addAnteLiveUpdateListener() {
+        editorAnte.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(
+                    CharSequence text,
+                    int start,
+                    int count,
+                    int after) {
+            }
+
+            @Override
+            public void onTextChanged(
+                    CharSequence text,
+                    int start,
+                    int before,
+                    int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                if (populatingEditor) {
+                    return;
+                }
+
+                if (anteEqualsBigBlindCheckbox.isChecked()) {
+                    anteEqualsBigBlindCheckbox.setChecked(false);
+                } else {
+                    applySelectedEdits();
+                }
+            }
+        });
+    }
+
     public void open() {
         editMenu.setVisibility(View.VISIBLE);
         selectedIndex = Math.min(tournament.getCurrentLevelIndex(), tournament.size() - 1);
@@ -348,6 +447,29 @@ public class TournamentEditorController {
         addCreationRow();
     }
 
+    private void keepSelectedLevelAtViewportPosition(int viewportTop) {
+        levelListScroll.getViewTreeObserver().addOnPreDrawListener(
+                new ViewTreeObserver.OnPreDrawListener() {
+                    @Override
+                    public boolean onPreDraw() {
+                        ViewTreeObserver observer = levelListScroll.getViewTreeObserver();
+
+                        if (observer.isAlive()) {
+                            observer.removeOnPreDrawListener(this);
+                        }
+
+                        if (selectedIndex < levelButtons.size()) {
+                            View selectedLevel = levelButtons.get(selectedIndex);
+                            levelListScroll.scrollTo(
+                                    0,
+                                    selectedLevel.getTop() - viewportTop);
+                        }
+
+                        return true;
+                    }
+                });
+    }
+
     private void addSelectionButton(int levelIndex) {
         TournamentLevel level = tournament.getLevel(levelIndex);
         View button = LayoutInflater.from(activity).inflate(
@@ -359,7 +481,7 @@ public class TournamentEditorController {
         button.setLayoutParams(levelButtonLayoutParams());
         button.setOnClickListener(view -> {
             select(levelIndex);
-            editorTitle.requestFocus();
+            focusFirstEditorField();
         });
         button.setOnFocusChangeListener((view, hasFocus) -> {
             if (hasFocus && isOpen()) {
@@ -367,10 +489,21 @@ public class TournamentEditorController {
             }
         });
         button.setOnKeyListener((view, keyCode, event) -> {
-            if (event.getAction() == KeyEvent.ACTION_DOWN
-                    && keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+            if (event.getAction() != KeyEvent.ACTION_DOWN) {
+                return false;
+            }
+
+            if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
                 select(levelIndex);
-                editorTitle.requestFocus();
+                focusFirstEditorField();
+                return true;
+            }
+
+            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+                return true;
+            }
+
+            if (levelIndex == 0 && keyCode == KeyEvent.KEYCODE_DPAD_UP) {
                 return true;
             }
 
@@ -380,12 +513,80 @@ public class TournamentEditorController {
         levelListContainer.addView(button);
     }
 
+    private void focusFirstEditorField() {
+        List<View> fields = editorFocusOrder();
+
+        if (!fields.isEmpty()) {
+            fields.get(0).requestFocus();
+        }
+    }
+
     private void addCreationRow() {
         LinearLayout row = new LinearLayout(activity);
         Button addLevelButton = createAddButton(R.string.add_level, false);
         Button addBreakButton = createAddButton(R.string.add_break, true);
+        Button backToMenuButton = new Button(activity);
         addLevelButton.setId(View.generateViewId());
         addBreakButton.setId(View.generateViewId());
+        backToMenuButton.setId(View.generateViewId());
+        backToMenuButton.setAllCaps(false);
+        backToMenuButton.setText(R.string.back_to_menu);
+        LinearLayout.LayoutParams backButtonParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        backButtonParams.topMargin = dpToPixels(8);
+        backToMenuButton.setLayoutParams(backButtonParams);
+        backToMenuButton.setOnClickListener(view -> {
+            closeAndApply();
+            returnToMainMenu.run();
+        });
+        addLevelButton.setOnKeyListener((view, keyCode, event) -> {
+            if (event.getAction() != KeyEvent.ACTION_DOWN) {
+                return false;
+            }
+
+            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+                return true;
+            }
+
+            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                backToMenuButton.requestFocus();
+                return true;
+            }
+
+            return false;
+        });
+        addBreakButton.setOnKeyListener((view, keyCode, event) -> {
+            if (event.getAction() != KeyEvent.ACTION_DOWN) {
+                return false;
+            }
+
+            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+                addLevelButton.requestFocus();
+                return true;
+            }
+
+            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                backToMenuButton.requestFocus();
+                return true;
+            }
+
+            return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT;
+        });
+        backToMenuButton.setOnKeyListener((view, keyCode, event) -> {
+            if (event.getAction() != KeyEvent.ACTION_DOWN) {
+                return false;
+            }
+
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                addLevelButton.requestFocus();
+                return true;
+            }
+
+            return keyCode == KeyEvent.KEYCODE_DPAD_LEFT
+                    || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT
+                    || keyCode == KeyEvent.KEYCODE_DPAD_DOWN;
+        });
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setLayoutParams(new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -393,6 +594,7 @@ public class TournamentEditorController {
         row.addView(addLevelButton);
         row.addView(addBreakButton);
         levelListContainer.addView(row);
+        levelListContainer.addView(backToMenuButton);
 
         if (!levelButtons.isEmpty()) {
             View finalLevelButton = levelButtons.get(levelButtons.size() - 1);
@@ -400,6 +602,10 @@ public class TournamentEditorController {
             addLevelButton.setNextFocusUpId(finalLevelButton.getId());
             addBreakButton.setNextFocusUpId(finalLevelButton.getId());
         }
+
+        addLevelButton.setNextFocusDownId(backToMenuButton.getId());
+        addBreakButton.setNextFocusDownId(backToMenuButton.getId());
+        backToMenuButton.setNextFocusUpId(addLevelButton.getId());
     }
 
     private Button createAddButton(int labelResource, boolean breakLevel) {
@@ -438,7 +644,14 @@ public class TournamentEditorController {
 
         applySelectedEdits();
         selectedIndex = levelIndex;
+        updateLevelSelectionStates();
         showSelectedEditor();
+    }
+
+    private void updateLevelSelectionStates() {
+        for (int index = 0; index < levelButtons.size(); index++) {
+            levelButtons.get(index).setSelected(index == selectedIndex);
+        }
     }
 
     private void addItem(boolean breakLevel) {
@@ -471,12 +684,21 @@ public class TournamentEditorController {
         listener.onTournamentChanged(currentLevelChanged);
     }
 
-    private void moveSelectedItem(int direction) {
+    private void moveSelectedItem(int direction, Button moveButton) {
         applySelectedEdits();
+        int selectedViewportTop = levelButtons.get(selectedIndex).getTop()
+                - levelListScroll.getScrollY();
         selectedIndex = tournament.move(selectedIndex, selectedIndex + direction);
         rebuildLevelList();
+        keepSelectedLevelAtViewportPosition(selectedViewportTop);
         showSelectedEditor();
-        focusSelectedButton();
+        if (moveButton.isEnabled()) {
+            moveButton.requestFocus();
+        } else if (moveItemUpButton.isEnabled()) {
+            moveItemUpButton.requestFocus();
+        } else if (moveItemDownButton.isEnabled()) {
+            moveItemDownButton.requestFocus();
+        }
         listener.onTournamentChanged(false);
     }
 
@@ -491,7 +713,7 @@ public class TournamentEditorController {
             editorBigBlind.setText(String.valueOf(level.getBigBlind()));
             editorMinutes.setText(String.valueOf(
                     tournament.getEffectiveMinutes(selectedIndex)));
-            editorAnte.setText(String.valueOf(level.getCustomAnte()));
+            editorAnte.setText(String.valueOf(level.getAnte()));
             doubleBigBlindCheckbox.setChecked(level.isBigBlindDoubleSmallBlind());
             indefiniteBreakCheckbox.setChecked(level.isIndefiniteBreak());
             setLevelTimeCheckbox.setChecked(level.hasOwnTime());
@@ -502,6 +724,8 @@ public class TournamentEditorController {
         }
 
         doubleBigBlindCheckbox.setVisibility(level.isBreak() ? View.GONE : View.VISIBLE);
+        editorTitleLabel.setVisibility(View.GONE);
+        editorTitle.setVisibility(View.GONE);
         indefiniteBreakCheckbox.setVisibility(level.isBreak() ? View.VISIBLE : View.GONE);
         setLevelTimeCheckbox.setEnabled(
                 !tournament.isFirstPlayableLevel(selectedIndex));
@@ -514,7 +738,7 @@ public class TournamentEditorController {
         removeItemButton.setText(level.isBreak()
                 ? R.string.remove_break
                 : R.string.remove_level);
-        moveItemRow.setVisibility(level.isBreak() ? View.VISIBLE : View.GONE);
+        moveItemRow.setVisibility(View.VISIBLE);
         moveItemUpButton.setEnabled(tournament.canMove(selectedIndex, -1));
         moveItemDownButton.setEnabled(tournament.canMove(selectedIndex, 1));
         removeItemButton.setEnabled(tournament.canRemove(selectedIndex));
@@ -535,8 +759,7 @@ public class TournamentEditorController {
         boolean hasOwnTime = tournament.isFirstPlayableLevel(selectedIndex)
                 || setLevelTimeCheckbox.isChecked();
         boolean hasAnte = hasAnteCheckbox.isChecked();
-        boolean anteEqualsBigBlind = hasAnte
-                && anteEqualsBigBlindCheckbox.isChecked();
+        boolean anteEqualsBigBlind = anteEqualsBigBlindCheckbox.isChecked();
         int minutes = level.getMinutes();
 
         if (!indefiniteBreak && hasOwnTime) {
@@ -587,6 +810,28 @@ public class TournamentEditorController {
             level.setSmallBlind(smallBlind);
             level.setBigBlind(bigBlind);
             level.setBigBlindDoubleSmallBlind(doubleBigBlind);
+
+            if (doubleBigBlind
+                    && !editorBigBlind.getText().toString().equals(String.valueOf(bigBlind))) {
+                populatingEditor = true;
+
+                try {
+                    editorBigBlind.setText(String.valueOf(bigBlind));
+                } finally {
+                    populatingEditor = false;
+                }
+            }
+
+            if (anteEqualsBigBlind
+                    && !editorAnte.getText().toString().equals(String.valueOf(bigBlind))) {
+                populatingEditor = true;
+
+                try {
+                    editorAnte.setText(String.valueOf(bigBlind));
+                } finally {
+                    populatingEditor = false;
+                }
+            }
         }
 
         if (!changed) {
@@ -613,8 +858,7 @@ public class TournamentEditorController {
 
     private void updateBigBlindEditorVisibility() {
         TournamentLevel level = tournament.getLevel(selectedIndex);
-        boolean showBigBlindEditor = !level.isBreak()
-                && !doubleBigBlindCheckbox.isChecked();
+        boolean showBigBlindEditor = !level.isBreak();
         bigBlindRow.setVisibility(showBigBlindEditor ? View.VISIBLE : View.GONE);
     }
 
@@ -641,9 +885,7 @@ public class TournamentEditorController {
         boolean showAnteOptions = !level.isBreak() && hasAnteCheckbox.isChecked();
         anteEqualsBigBlindCheckbox.setVisibility(
                 showAnteOptions ? View.VISIBLE : View.GONE);
-        boolean showCustomAnte = showAnteOptions
-                && !anteEqualsBigBlindCheckbox.isChecked();
-        anteRow.setVisibility(showCustomAnte ? View.VISIBLE : View.GONE);
+        anteRow.setVisibility(showAnteOptions ? View.VISIBLE : View.GONE);
     }
 
     private void updateAllLevelSelectionViews() {
@@ -677,6 +919,7 @@ public class TournamentEditorController {
     }
 
     private void updateLevelSelectionView(View row, int index, TournamentLevel level) {
+        row.setSelected(index == selectedIndex);
         TextView numberView = row.findViewById(R.id.list_item_number);
         TextView titleView = row.findViewById(R.id.list_item_title);
         TextView blindsView = row.findViewById(R.id.list_item_blinds);

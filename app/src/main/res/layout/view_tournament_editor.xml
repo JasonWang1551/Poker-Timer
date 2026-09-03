@@ -11,6 +11,7 @@
     android:visibility="gone">
 
     <ScrollView
+        android:id="@+id/level_list_scroll"
         android:layout_width="260dp"
         android:layout_height="match_parent">
 
@@ -26,7 +27,7 @@
         android:layout_height="match_parent"
         android:layout_marginStart="22dp"
         android:layout_marginEnd="22dp"
-        android:background="#55FFFFFF" />
+        android:background="@color/selection_overlay" />
 
     <ScrollView
         android:layout_width="0dp"
@@ -50,6 +51,7 @@
                 tools:text="Level 1" />
 
             <TextView
+                android:id="@+id/editor_title_label"
                 style="@style/EditorLabel"
                 android:text="@string/optional_title" />
 
@@ -59,7 +61,7 @@
                 android:layout_height="wrap_content"
                 android:inputType="textCapWords"
                 android:singleLine="true"
-                android:textColor="@android:color/white" />
+                android:textColor="@color/text_primary" />
 
             <LinearLayout
                 android:id="@+id/small_blind_row"
@@ -82,7 +84,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:text="@string/double_big_blind"
-                android:textColor="@android:color/white"
+                android:textColor="@color/text_primary"
                 android:textSize="18sp" />
 
             <CheckBox
@@ -91,7 +93,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:text="@string/indefinite_break"
-                android:textColor="@android:color/white"
+                android:textColor="@color/text_primary"
                 android:textSize="18sp"
                 android:visibility="gone" />
 
@@ -116,7 +118,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:text="@string/has_ante"
-                android:textColor="@android:color/white"
+                android:textColor="@color/text_primary"
                 android:textSize="18sp" />
 
             <CheckBox
@@ -125,7 +127,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:text="@string/ante_equals_big_blind"
-                android:textColor="@android:color/white"
+                android:textColor="@color/text_primary"
                 android:textSize="18sp"
                 android:visibility="gone" />
 
@@ -151,7 +153,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:text="@string/set_level_time"
-                android:textColor="@android:color/white"
+                android:textColor="@color/text_primary"
                 android:textSize="18sp" />
 
             <LinearLayout

@@ -2,4 +2,12 @@
     <color name="timer_background">#101820</color>
     <color name="timer_status">#FFCC66</color>
     <color name="menu_background">#F21A2633</color>
+    <color name="text_primary">#FFFFFFFF</color>
+    <color name="selection_overlay">#55FFFFFF</color>
+    <color name="divider">#66FFFFFF</color>
+    <color name="button_pressed">#FFFFA726</color>
+    <color name="button_background">#FF455A64</color>
+    <color name="button_background_disabled">#FF303840</color>
+    <color name="button_text_disabled">#FF909090</color>
+    <color name="main_control_border">#FFD0D0D0</color>
 </resources>
