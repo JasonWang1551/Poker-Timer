@@ -42,7 +42,7 @@ public class Tournament {
                     index == 0,
                     false,
                     true,
-                    smallBlind*2));
+                    smallBlind * 2));
         }
     }
 
@@ -323,11 +323,7 @@ public class Tournament {
         TournamentLevel movedLevel = proposedOrder.remove(index);
         proposedOrder.add(targetIndex, movedLevel);
 
-        if (proposedOrder.get(0).isBreak()) {
-            return false;
-        }
-
-        return true;
+        return !proposedOrder.get(0).isBreak();
     }
 
     public boolean canRemove(int index) {

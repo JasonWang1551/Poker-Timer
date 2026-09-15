@@ -1,0 +1,8 @@
+<resources>
+    <attr name="timerBackground" format="color" />
+    <attr name="menuBackground" format="color" />
+    <attr name="menuOpacity" format="float" />
+    <attr name="themeAccent" format="color" />
+    <attr name="buttonBackground" format="color" />
+    <attr name="themeText" format="color" />
+</resources>

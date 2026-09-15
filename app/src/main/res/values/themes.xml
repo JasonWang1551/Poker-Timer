@@ -1,18 +1,87 @@
 <resources>
 
     <style name="Theme.PokerTimer" parent="@style/Theme.Leanback">
+        <item name="timerBackground">@color/timer_background</item>
+        <item name="menuBackground">@color/menu_background</item>
+        <item name="menuOpacity">0.95</item>
+        <item name="themeAccent">@color/timer_status</item>
+        <item name="buttonBackground">@color/button_background</item>
+        <item name="themeText">@color/text_primary</item>
+        <item name="android:colorAccent">?attr/themeAccent</item>
         <item name="android:buttonStyle">@style/PokerTimerButton</item>
     </style>
 
+    <style name="Theme.PokerTimer.Forest" parent="Theme.PokerTimer">
+        <item name="timerBackground">@color/forest_background</item>
+        <item name="menuBackground">@color/forest_menu_background</item>
+        <item name="themeAccent">@color/forest_accent</item>
+        <item name="buttonBackground">@color/forest_button_background</item>
+        <item name="themeText">@color/forest_text</item>
+    </style>
+
+    <style name="Theme.PokerTimer.Day" parent="Theme.PokerTimer">
+        <item name="timerBackground">@color/day_background</item>
+        <item name="menuBackground">@color/day_menu_background</item>
+        <item name="buttonBackground">@color/day_button_background</item>
+        <item name="themeAccent">@color/day_accent</item>
+        <item name="themeText">@color/day_text</item>
+    </style>
+
+    <style name="Theme.PokerTimer.Blue" parent="Theme.PokerTimer">
+        <item name="timerBackground">@color/blue_background</item>
+        <item name="menuBackground">@color/blue_menu_background</item>
+        <item name="buttonBackground">@color/blue_button_background</item>
+        <item name="themeAccent">@color/blue_accent</item>
+        <item name="themeText">@color/blue_text</item>
+    </style>
+
+    <style name="Theme.PokerTimer.Violet" parent="Theme.PokerTimer">
+        <item name="timerBackground">@color/violet_background</item>
+        <item name="menuBackground">@color/violet_menu_background</item>
+        <item name="buttonBackground">@color/violet_button_background</item>
+        <item name="themeAccent">@color/violet_accent</item>
+        <item name="themeText">@color/violet_text</item>
+    </style>
+
+    <style name="Theme.PokerTimer.Red" parent="Theme.PokerTimer">
+        <item name="timerBackground">@color/red_background</item>
+        <item name="menuBackground">@color/red_menu_background</item>
+        <item name="buttonBackground">@color/red_button_background</item>
+        <item name="themeAccent">@color/red_accent</item>
+        <item name="themeText">@color/red_text</item>
+    </style>
+
     <style name="PokerTimerButton" parent="@android:style/Widget.Button">
-        <item name="android:backgroundTint">@color/button_background_tint</item>
+        <item name="android:background">@drawable/standard_button_background</item>
         <item name="android:textColor">@color/button_text_tint</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:gravity">center</item>
+        <item name="android:minWidth">88dp</item>
+        <item name="android:minHeight">40dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:paddingBottom">10dp</item>
+        <item name="android:elevation">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+
+    <style name="PokerTimerIconButton" parent="@android:style/Widget.ImageButton">
+        <item name="android:layout_width">56dp</item>
+        <item name="android:layout_height">56dp</item>
+        <item name="android:background">@drawable/standard_button_background</item>
+        <item name="android:tint">@color/button_text_tint</item>
+        <item name="android:padding">14dp</item>
+        <item name="android:scaleType">centerInside</item>
+        <item name="android:elevation">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
     </style>
 
     <style name="EditorLabel">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textColor">?attr/themeText</item>
         <item name="android:textSize">18sp</item>
     </style>
 
@@ -28,6 +97,6 @@
         <item name="android:layout_width">140dp</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:inputType">number</item>
-        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textColor">?attr/themeText</item>
     </style>
 </resources>

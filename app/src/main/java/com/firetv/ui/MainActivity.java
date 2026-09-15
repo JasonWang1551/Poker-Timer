@@ -1,7 +1,5 @@
 package com.firetv.ui;
 
-import android.media.AudioManager;
-import android.media.ToneGenerator;
 import android.app.AlertDialog;
 import android.os.Build;
 import android.os.Bundle;
@@ -13,6 +11,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewParent;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,9 +24,13 @@ import com.firetv.controller.TournamentEditorController;
 import com.firetv.model.CountdownTimer;
 import com.firetv.model.Tournament;
 import com.firetv.model.TournamentLevel;
-import com.firetv.model.TournamentStore;
+import com.firetv.data.TournamentStore;
+import com.firetv.controller.AlarmSoundController;
+import com.firetv.controller.TextToSpeechController;
+import com.firetv.controller.ThemeController;
 
 import java.util.List;
+import java.util.Locale;
 
 public class MainActivity extends FragmentActivity {
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -61,39 +64,66 @@ public class MainActivity extends FragmentActivity {
     private EditText tournamentNameEditor;
     private View mainMenu;
     private View editTournamentButton;
+    private View settingsMenu;
+    private View settingsButton;
+    private ThemeController themes;
+    private AlarmSoundController alarmSounds;
+    private TextToSpeechController speech;
     private MainScreenControlsController mainScreenControls;
     private TournamentEditorController editorController;
     private TournamentStore tournamentStore;
     private boolean allowDpadMediaFallback;
     private boolean hasAlerted;
+    private boolean hasStartedTournament;
+    private boolean announceLevelWhenResumed;
+    private boolean startTournamentWhenResumed;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        themes = new ThemeController(this, this::rebindEditingPanels);
+        themes.applySavedTheme();
         super.onCreate(savedInstanceState);
+        speech = new TextToSpeechController(this, tournament::getCurrentLevel);
         setContentView(R.layout.activity_main);
+        alarmSounds = new AlarmSoundController(this);
         tournamentStore = new TournamentStore(this);
         tournament.replaceWith(tournamentStore.loadCurrent());
         bindViews();
+        themes.refreshViews();
         mainScreenControls = new MainScreenControlsController(
-                previousLevelTextView,
-                findViewById(R.id.current_level_control),
-                nextLevelTextView,
+                findViewById(R.id.previous_level_button),
+                findViewById(R.id.main_reset_level_button),
+                (ImageButton) findViewById(R.id.pause_resume_button),
+                findViewById(R.id.next_level_button),
+                findViewById(R.id.main_menu_button),
                 this::goToPreviousLevel,
+                () -> resetLevel(true),
                 this::toggleTimer,
                 this::advanceLevel,
                 this::openMainMenu);
         configureMenus();
+        configureSettings();
 
+        bindEditorController();
+        allowDpadMediaFallback = !"Amazon".equalsIgnoreCase(Build.MANUFACTURER);
+        updateStatusText();
+        updateTimerText();
+        mainScreenControls.requestInitialFocus();
+    }
+
+    private void bindEditorController() {
         editorController = new TournamentEditorController(
                 this,
                 tournament,
                 this::handleTournamentChange,
                 this::returnFromEditorToMainMenu);
-        allowDpadMediaFallback = !"Amazon".equalsIgnoreCase(Build.MANUFACTURER);
-        updateLevelText();
-        updateStatusText();
-        updateTimerText();
-        mainScreenControls.requestInitialFocus();
+    }
+
+    // Older Android versions need fresh editing views to update their cursors.
+    private void rebindEditingPanels() {
+        bindViews();
+        configureMenus();
+        bindEditorController();
     }
 
     private void bindViews() {
@@ -107,6 +137,8 @@ public class MainActivity extends FragmentActivity {
         tournamentNameEditor = findViewById(R.id.menu_tournament_name);
         mainMenu = findViewById(R.id.main_menu);
         editTournamentButton = findViewById(R.id.edit_tournament_button);
+        settingsMenu = findViewById(R.id.settings_menu);
+        settingsButton = findViewById(R.id.settings_button);
     }
 
     private void configureMenus() {
@@ -138,6 +170,7 @@ public class MainActivity extends FragmentActivity {
         editTournamentButton.setOnClickListener(view -> {
             openEditor();
         });
+        settingsButton.setOnClickListener(view -> openSettings());
         findViewById(R.id.save_tournament_button).setOnClickListener(view -> {
             saveNamedTournament();
         });
@@ -145,7 +178,7 @@ public class MainActivity extends FragmentActivity {
             showLoadTournamentDialog();
         });
         findViewById(R.id.reset_level_button).setOnClickListener(view -> {
-            resetLevel();
+            resetLevel(true);
             closeMainMenu();
         });
         findViewById(R.id.reset_tournament_button).setOnClickListener(view -> {
@@ -195,8 +228,29 @@ public class MainActivity extends FragmentActivity {
         findViewById(R.id.save_tournament_button).setOnKeyListener(closeMenuOnLeft);
         findViewById(R.id.load_tournament_button).setOnKeyListener(closeMenuOnLeft);
         editTournamentButton.setOnKeyListener(closeMenuOnLeft);
+        settingsButton.setOnKeyListener(closeMenuOnLeft);
         findViewById(R.id.reset_level_button).setOnKeyListener(closeMenuOnLeft);
         findViewById(R.id.reset_tournament_button).setOnKeyListener(closeMenuOnLeft);
+    }
+
+    private void configureSettings() {
+        findViewById(R.id.settings_back_button).setOnClickListener(view -> closeSettings());
+        alarmSounds.bindSettings(R.id.text_to_speech_selector);
+        speech.bindSettings(R.id.theme_selector_button);
+        themes.bindSettings();
+    }
+
+    private void openSettings() {
+        applyTournamentName();
+        mainMenu.setVisibility(View.GONE);
+        settingsMenu.setVisibility(View.VISIBLE);
+        alarmSounds.focusSelector();
+    }
+
+    private void closeSettings() {
+        settingsMenu.setVisibility(View.GONE);
+        mainMenu.setVisibility(View.VISIBLE);
+        settingsButton.requestFocus();
     }
 
     @Override
@@ -206,18 +260,21 @@ public class MainActivity extends FragmentActivity {
     }
 
     @Override
-
     protected void onPause() {
         super.onPause();
 
         handler.removeCallbacks(clearRewindWindowRunnable);
-        mainScreenControls.stop();
-
         waitingForSecondRewind = false;
         timer.pause();
         handler.removeCallbacks(tickRunnable);
         updateStatusText();
         persistCurrentTournament();
+    }
+
+    @Override
+    protected void onDestroy() {
+        speech.shutdown();
+        super.onDestroy();
     }
 
     @Override
@@ -246,7 +303,7 @@ public class MainActivity extends FragmentActivity {
         }
 
         if (RemoteKeys.isForward(keyCode, allowDpadMediaFallback)) {
-            handleForwardPress();
+            advanceLevel();
             return true;
         }
 
@@ -285,9 +342,16 @@ public class MainActivity extends FragmentActivity {
         }
 
         View nextFocus = focusedView.focusSearch(focusDirection);
-        View openMenu = editorController.isOpen()
-                ? findViewById(R.id.edit_menu)
-                : mainMenu;
+        View openMenu;
+
+        if (editorController.isOpen()) {
+            openMenu = findViewById(R.id.edit_menu);
+        } else if (settingsMenu.getVisibility() == View.VISIBLE) {
+            openMenu = settingsMenu;
+        } else {
+            openMenu = mainMenu;
+        }
+
         return nextFocus == null || !isDescendantOf(nextFocus, openMenu);
     }
 
@@ -307,11 +371,14 @@ public class MainActivity extends FragmentActivity {
 
     private boolean isAnyMenuOpen() {
         return mainMenu.getVisibility() == View.VISIBLE
+                || settingsMenu.getVisibility() == View.VISIBLE
                 || editorController.isOpen();
     }
 
     private void handleMenuKey() {
-        if (editorController.isOpen()) {
+        if (settingsMenu.getVisibility() == View.VISIBLE) {
+            closeSettings();
+        } else if (editorController.isOpen()) {
             editorController.closeAndApply();
             openMainMenu();
         } else if (mainMenu.getVisibility() == View.VISIBLE) {
@@ -333,7 +400,7 @@ public class MainActivity extends FragmentActivity {
             return;
         }
 
-        resetLevel();
+        resetLevel(true);
         waitingForSecondRewind = true;
         handler.postDelayed(
                 clearRewindWindowRunnable,
@@ -341,16 +408,14 @@ public class MainActivity extends FragmentActivity {
     }
 
     private void handleBackKey() {
-        if (editorController.isOpen()) {
+        if (settingsMenu.getVisibility() == View.VISIBLE) {
+            closeSettings();
+        } else if (editorController.isOpen()) {
             editorController.closeAndApply();
             openMainMenu();
         } else {
             closeMainMenu();
         }
-    }
-
-    private void handleForwardPress() {
-        advanceLevel();
     }
 
     private void openMainMenu() {
@@ -491,12 +556,8 @@ public class MainActivity extends FragmentActivity {
         }
 
         tournament.replaceWith(loadedTournament);
-        tournament.reset();
-        timer.reset(false);
-        hasAlerted = false;
+        resetTournament();
         tournamentNameEditor.setText(tournament.getName());
-        updateLevelText();
-        updateTimerText();
         persistCurrentTournament();
         closeMainMenu();
     }
@@ -527,8 +588,22 @@ public class MainActivity extends FragmentActivity {
 
         if (timer.isRunning()) {
             timer.pause();
+            speech.stop();
         } else {
+            boolean wasWaitingToAnnounce = announceLevelWhenResumed;
+            announceLevelWhenResumed = false;
+            boolean startingTournament = startTournamentWhenResumed
+                    || (!hasStartedTournament
+                    && tournament.isFirstPlayableLevel(tournament.getCurrentLevelIndex())
+                    && timer.getRemainingMs(currentDurationMs()) == currentDurationMs());
+            startTournamentWhenResumed = false;
             timer.start();
+            if (startingTournament) {
+                hasStartedTournament = true;
+                speech.announceTournamentStart(tournament.getCurrentLevel());
+            } else if (wasWaitingToAnnounce) {
+                announceCurrentLevelDetails();
+            }
         }
 
         updateStatusText();
@@ -536,6 +611,10 @@ public class MainActivity extends FragmentActivity {
     }
 
     private void resetLevel() {
+        resetLevel(false);
+    }
+
+    private void resetLevel(boolean announceBlinds) {
         boolean resume = timer.isRunning();
 
         if (tournament.getCurrentLevel().isIndefiniteBreak()) {
@@ -545,6 +624,12 @@ public class MainActivity extends FragmentActivity {
         }
 
         hasAlerted = false;
+        announceLevelWhenResumed = false;
+        startTournamentWhenResumed = announceBlinds && !resume
+                && tournament.isFirstPlayableLevel(tournament.getCurrentLevelIndex());
+        if (announceBlinds && resume && !tournament.getCurrentLevel().isBreak()) {
+            speech.announceBlindsAndAnte(tournament.getCurrentLevel());
+        }
         updateStatusText();
         updateTimerText();
     }
@@ -553,7 +638,10 @@ public class MainActivity extends FragmentActivity {
         tournament.reset();
         timer.reset(false);
         hasAlerted = false;
-        updateLevelText();
+        hasStartedTournament = false;
+        announceLevelWhenResumed = false;
+        startTournamentWhenResumed = false;
+        speech.stop();
         updateStatusText();
         updateTimerText();
     }
@@ -601,6 +689,11 @@ public class MainActivity extends FragmentActivity {
 
     private void updateAdjacentLevelPreviews() {
         int currentIndex = tournament.getCurrentLevelIndex();
+        if (mainScreenControls != null) {
+            mainScreenControls.setNavigationAvailability(
+                    currentIndex > 0,
+                    currentIndex < tournament.size() - 1);
+        }
         updateLevelPreview(
                 previousLevelTextView,
                 currentIndex - 1,
@@ -711,6 +804,9 @@ public class MainActivity extends FragmentActivity {
 
     private void updateStatusText() {
         updateLevelText();
+        if (mainScreenControls != null) {
+            mainScreenControls.setTimerRunning(timer.isRunning());
+        }
     }
 
     private void updateTimerText() {
@@ -730,19 +826,25 @@ public class MainActivity extends FragmentActivity {
         long remainingMs = timer.getRemainingMs(durationMs);
         long totalSeconds = (remainingMs + 999L) / 1000L;
         timerTextView.setText(String.format(
+                Locale.getDefault(),
                 "%02d:%02d",
                 totalSeconds / 60L,
                 totalSeconds % 60L));
     }
 
     private void goToPreviousLevel() {
+        boolean wasRunning = timer.isRunning();
         if (!tournament.goBack()) {
-            resetLevel();
+            resetLevel(true);
             return;
         }
 
         updateLevelText();
         resetLevel();
+        announceLevelWhenResumed = !wasRunning;
+        if (wasRunning) {
+            announceCurrentLevel();
+        }
     }
 
     private void advanceLevel() {
@@ -753,21 +855,29 @@ public class MainActivity extends FragmentActivity {
             return;
         }
 
+        boolean wasRunning = timer.isRunning();
         updateLevelText();
-        resetLevel();
+        resetLevel(false);
+        announceLevelWhenResumed = !wasRunning;
+        if (wasRunning) {
+            announceCurrentLevel();
+        }
     }
 
     private void finishCurrentLevel() {
         timerTextView.setText("00:00");
 
-        if (!hasAlerted) {
-            hasAlerted = true;
-            playTimerAlert();
-        }
+        boolean shouldPlayAlert = !hasAlerted;
+        hasAlerted = true;
 
         if (tournament.advance()) {
             updateLevelText();
             resetLevel();
+            if (shouldPlayAlert) {
+                playTimerAlert(this::announceCurrentLevel);
+            } else {
+                announceCurrentLevel();
+            }
         } else {
             timer.pause();
         }
@@ -780,7 +890,6 @@ public class MainActivity extends FragmentActivity {
 
     private void finishIndefiniteBreak() {
         hasAlerted = true;
-        playTimerAlert();
 
         if (tournament.advance()) {
             timer.reset(true);
@@ -788,6 +897,7 @@ public class MainActivity extends FragmentActivity {
             updateLevelText();
             updateTimerText();
             persistCurrentTournament();
+            playTimerAlert(this::announceCurrentLevel);
         } else {
             timer.finish(currentDurationMs());
             levelTextView.setText(R.string.timer_finished);
@@ -795,9 +905,25 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
-    private void playTimerAlert() {
-        ToneGenerator tone = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
-        tone.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 2_000);
-        handler.postDelayed(tone::release, 2_100);
+    private void announceCurrentLevel() {
+        TournamentLevel level = tournament.getCurrentLevel();
+        if (level.isBreak()) {
+            speech.announceBreak();
+        } else {
+            speech.announceLevel(level);
+        }
+    }
+
+    private void announceCurrentLevelDetails() {
+        TournamentLevel level = tournament.getCurrentLevel();
+        if (level.isBreak()) {
+            speech.announceBreak();
+        } else {
+            speech.announceBlindsAndAnte(level);
+        }
+    }
+
+    private void playTimerAlert(Runnable afterAlert) {
+        alarmSounds.play(afterAlert);
     }
 }

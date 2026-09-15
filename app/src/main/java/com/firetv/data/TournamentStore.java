@@ -1,4 +1,7 @@
-package com.firetv.model;
+package com.firetv.data;
+
+import com.firetv.model.Tournament;
+import com.firetv.model.TournamentLevel;
 
 import android.content.Context;
 import android.content.SharedPreferences;

@@ -4,7 +4,7 @@
     android:layout_width="340dp"
     android:layout_height="match_parent"
     android:layout_gravity="end"
-    android:background="@color/menu_background"
+    android:background="?attr/menuBackground"
     android:orientation="vertical"
     android:padding="28dp"
     android:visibility="gone">
@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
         android:text="@string/tournament_menu"
-        android:textColor="@color/text_primary"
+        android:textColor="?attr/themeText"
         android:textSize="26sp"
         android:textStyle="bold" />
 
@@ -22,17 +22,18 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/tournament_name"
-        android:textColor="@color/text_primary"
+        android:textColor="?attr/themeText"
         android:textSize="18sp" />
 
     <EditText
+        android:textCursorDrawable="@drawable/text_cursor"
         android:id="@+id/menu_tournament_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="18dp"
         android:inputType="textCapWords"
         android:singleLine="true"
-        android:textColor="@color/text_primary" />
+        android:textColor="?attr/themeText" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -61,6 +62,13 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:text="@string/edit_tournament" />
+
+    <Button
+        android:id="@+id/settings_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="@string/settings" />
 
     <Button
         android:id="@+id/reset_level_button"

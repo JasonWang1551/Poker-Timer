@@ -1,13 +1,37 @@
 <resources>
     <color name="timer_background">#101820</color>
     <color name="timer_status">#FFCC66</color>
-    <color name="menu_background">#F21A2633</color>
-    <color name="text_primary">#FFFFFFFF</color>
-    <color name="selection_overlay">#55FFFFFF</color>
-    <color name="divider">#66FFFFFF</color>
-    <color name="button_pressed">#FFFFA726</color>
+    <color name="menu_background">#1A2633</color>
+    <color name="text_primary">#FFFFFF</color>
     <color name="button_background">#FF455A64</color>
-    <color name="button_background_disabled">#FF303840</color>
-    <color name="button_text_disabled">#FF909090</color>
-    <color name="main_control_border">#FFD0D0D0</color>
+    <!-- Forest Palette -->
+    <color name="forest_background">#093707</color>
+    <color name="forest_menu_background">#153327</color>
+    <color name="forest_accent">#10AF29</color>
+    <color name="forest_button_background">#2D6248</color>
+    <color name="forest_text">#FFFFFF</color>
+    <!-- Day Palette -->
+    <color name="day_background">#FFFFFF</color>
+    <color name="day_menu_background">#F2F2F2</color>
+    <color name="day_button_background">#DDDDDD</color>
+    <color name="day_accent">#424242</color>
+    <color name="day_text">#000000</color>
+    <!-- Blue Palette -->
+    <color name="blue_background">#0B176A</color>
+    <color name="blue_menu_background">#063575</color>
+    <color name="blue_button_background">#2052A6</color>
+    <color name="blue_accent">#E7B448</color>
+    <color name="blue_text">#FFFFFF</color>
+    <!-- Violet Palette -->
+    <color name="violet_background">#1B102B</color>
+    <color name="violet_menu_background">#2B1A42</color>
+    <color name="violet_button_background">#56357A</color>
+    <color name="violet_accent">#E0B1FF</color>
+    <color name="violet_text">#FFFFFF</color>
+    <!-- Red Palette: deep crimson with a silver accent -->
+    <color name="red_background">#460E16</color>
+    <color name="red_menu_background">#641520</color>
+    <color name="red_button_background">#A32636</color>
+    <color name="red_accent">#C0C0C0</color>
+    <color name="red_text">#F5F3F7</color>
 </resources>

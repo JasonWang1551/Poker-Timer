@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:minHeight="52dp"
+    android:tag="level_selection"
     android:background="@drawable/level_item_background"
     android:clickable="true"
     android:focusable="true"
@@ -21,7 +22,7 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:gravity="start|center_vertical"
-            android:textColor="@color/text_primary"
+            android:textColor="?attr/themeText"
             android:textSize="16sp" />
 
         <LinearLayout
@@ -38,7 +39,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:singleLine="true"
-                android:textColor="@color/text_primary"
+                android:textColor="?attr/themeText"
                 android:textSize="12sp"
                 android:visibility="gone" />
 
@@ -48,7 +49,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:singleLine="true"
-                android:textColor="@color/text_primary"
+                android:textColor="?attr/themeText"
                 android:textSize="16sp" />
 
             <TextView
@@ -57,7 +58,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:singleLine="true"
-                android:textColor="@color/text_primary"
+                android:textColor="?attr/themeText"
                 android:textSize="12sp"
                 android:visibility="gone" />
         </LinearLayout>
@@ -66,13 +67,14 @@
     <View
         android:layout_width="1dp"
         android:layout_height="32dp"
-        android:background="@color/divider" />
+        android:id="@+id/list_item_divider"
+        android:background="?attr/themeText" />
 
     <TextView
         android:id="@+id/list_item_time"
         android:layout_width="78dp"
         android:layout_height="match_parent"
         android:gravity="center"
-        android:textColor="@color/text_primary"
+        android:textColor="?attr/themeText"
         android:textSize="16sp" />
 </LinearLayout>

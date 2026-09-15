@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/timer_background"
+    android:background="?attr/timerBackground"
     tools:context=".ui.MainActivity"
     tools:deviceIds="tv">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center"
+        android:gravity="center|top"
         android:orientation="vertical"
         android:padding="32dp">
 
@@ -18,51 +19,53 @@
             android:id="@+id/tournament_name_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:includeFontPadding="false"
             android:text="@string/app_name"
-            android:textColor="@color/text_primary"
-            android:textSize="30sp"
+            android:textColor="?attr/themeText"
+            android:textSize="48sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/level_title_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:textColor="@color/text_primary"
+            android:layout_marginTop="1px"
+            android:textColor="?attr/themeText"
             android:textSize="28sp"
             android:textStyle="normal|italic"
-            android:visibility="visible"
+            android:visibility="gone"
             tools:text="Final Table" />
 
         <LinearLayout
             android:id="@+id/current_level_control"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/main_control_background"
-            android:clickable="true"
-            android:focusable="true"
+            android:layout_marginTop="-20dp"
             android:gravity="center"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:orientation="vertical">
 
             <TextView
                 android:id="@+id/timer_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="monospace"
+                android:includeFontPadding="false"
+                android:lineHeight="64sp"
+                android:singleLine="true"
                 android:text="10:00"
-                android:textColor="@color/text_primary"
-                android:textSize="64sp"
+                android:textColor="?attr/themeText"
+                android:textSize="200sp"
+                android:letterSpacing="0"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/level_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:textColor="@color/timer_status"
-                android:textSize="24sp"
+                android:layout_marginTop="-30dp"
+                android:layout_marginBottom="-20dp"
+                android:includeFontPadding="false"
+                android:textColor="?attr/themeAccent"
+                android:textSize="34sp"
                 android:textStyle="bold"
                 tools:text="Level 5 - Paused" />
 
@@ -73,8 +76,8 @@
                 android:layout_marginTop="8dp"
                 android:gravity="center"
                 android:textAlignment="center"
-                android:textColor="@color/text_primary"
-                android:textSize="48sp"
+                android:textColor="?attr/themeText"
+                android:textSize="60sp"
                 tools:text="Blinds 100 / 200" />
         </LinearLayout>
     </LinearLayout>
@@ -84,15 +87,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|start"
-        android:layout_margin="28dp"
-        android:background="@drawable/main_control_background"
-        android:clickable="true"
-        android:focusable="true"
+        android:layout_marginStart="28dp"
+        android:layout_marginBottom="104dp"
         android:gravity="start"
-        android:padding="12dp"
-        android:textColor="@color/text_primary"
+        android:textColor="?attr/themeText"
         android:textSize="18sp"
-        android:visibility="gone"
         tools:text="Previous: Level 1 • 25 / 50" />
 
     <TextView
@@ -100,17 +99,59 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="28dp"
-        android:background="@drawable/main_control_background"
-        android:clickable="true"
-        android:focusable="true"
+        android:layout_marginEnd="28dp"
+        android:layout_marginBottom="104dp"
         android:gravity="end"
-        android:padding="12dp"
-        android:textColor="@color/text_primary"
+        android:textColor="?attr/themeText"
         android:textSize="18sp"
-        android:visibility="gone"
+        android:visibility="visible"
         tools:text="Next: Level 2 • 50 / 100" />
+
+    <LinearLayout
+        android:id="@+id/main_controls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="24dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/previous_level_button"
+            style="@style/PokerTimerIconButton"
+            android:contentDescription="@string/previous_level"
+            android:src="@drawable/ic_previous" />
+
+        <ImageButton
+            android:id="@+id/main_reset_level_button"
+            style="@style/PokerTimerIconButton"
+            android:layout_marginStart="12dp"
+            android:contentDescription="@string/reset_level"
+            android:src="@drawable/ic_reset" />
+
+        <ImageButton
+            android:id="@+id/pause_resume_button"
+            style="@style/PokerTimerIconButton"
+            android:layout_marginStart="12dp"
+            android:contentDescription="@string/pause_timer"
+            android:src="@drawable/ic_pause" />
+
+        <ImageButton
+            android:id="@+id/next_level_button"
+            style="@style/PokerTimerIconButton"
+            android:layout_marginStart="12dp"
+            android:contentDescription="@string/next_level"
+            android:src="@drawable/ic_next" />
+
+        <ImageButton
+            android:id="@+id/main_menu_button"
+            style="@style/PokerTimerIconButton"
+            android:layout_marginStart="12dp"
+            android:contentDescription="@string/open_menu"
+            android:src="@drawable/ic_settings" />
+    </LinearLayout>
 
     <include layout="@layout/view_tournament_menu" />
     <include layout="@layout/view_tournament_editor" />
+    <include layout="@layout/view_settings" />
 </FrameLayout>

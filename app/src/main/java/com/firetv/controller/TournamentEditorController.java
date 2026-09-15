@@ -18,6 +18,7 @@ import android.widget.TextView;
 import androidx.core.widget.TextViewCompat;
 
 import com.firetv.R;
+import com.firetv.ui.ButtonColors;
 import com.firetv.model.Tournament;
 import com.firetv.model.TournamentLevel;
 
@@ -206,8 +207,6 @@ public class TournamentEditorController {
                 moveItemUpButton.requestFocus();
             } else if (moveItemDownButton.isEnabled()) {
                 moveItemDownButton.requestFocus();
-            } else if (timeRow.getVisibility() == View.VISIBLE) {
-                focusLastEditorField();
             } else {
                 focusLastEditorField();
             }
@@ -476,6 +475,7 @@ public class TournamentEditorController {
                 R.layout.item_tournament_level,
                 levelListContainer,
                 false);
+        ButtonColors.applySelection(button);
         button.setId(View.generateViewId());
         updateLevelSelectionView(button, levelIndex, level);
         button.setLayoutParams(levelButtonLayoutParams());
@@ -526,6 +526,7 @@ public class TournamentEditorController {
         Button addLevelButton = createAddButton(R.string.add_level, false);
         Button addBreakButton = createAddButton(R.string.add_break, true);
         Button backToMenuButton = new Button(activity);
+        ButtonColors.apply(backToMenuButton);
         addLevelButton.setId(View.generateViewId());
         addBreakButton.setId(View.generateViewId());
         backToMenuButton.setId(View.generateViewId());
@@ -610,6 +611,7 @@ public class TournamentEditorController {
 
     private Button createAddButton(int labelResource, boolean breakLevel) {
         Button button = new Button(activity);
+        ButtonColors.apply(button);
         button.setAllCaps(false);
         button.setText(labelResource);
         button.setEnabled(!breakLevel || tournament.canAddBreak());
