@@ -1,4 +1,4 @@
-package com.firetv.ui;
+package com.pokertimer.homegame.timer.ui;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -11,7 +11,7 @@ import android.widget.TextView;
 
 import androidx.core.graphics.ColorUtils;
 
-import com.firetv.R;
+import com.pokertimer.homegame.timer.R;
 
 /** Shared state colors for both inflated and dynamically created buttons. */
 public final class ButtonColors {

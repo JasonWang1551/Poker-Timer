@@ -1,4 +1,4 @@
-package com.firetv.controller;
+package com.pokertimer.homegame.timer.controller;
 
 import android.app.Activity;
 import android.text.Editable;
@@ -17,10 +17,10 @@ import android.widget.TextView;
 
 import androidx.core.widget.TextViewCompat;
 
-import com.firetv.R;
-import com.firetv.ui.ButtonColors;
-import com.firetv.model.Tournament;
-import com.firetv.model.TournamentLevel;
+import com.pokertimer.homegame.timer.R;
+import com.pokertimer.homegame.timer.ui.ButtonColors;
+import com.pokertimer.homegame.timer.model.Tournament;
+import com.pokertimer.homegame.timer.model.TournamentLevel;
 
 import java.util.ArrayList;
 import java.util.List;

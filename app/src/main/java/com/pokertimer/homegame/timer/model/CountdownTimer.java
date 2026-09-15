@@ -1,4 +1,4 @@
-package com.firetv.model;
+package com.pokertimer.homegame.timer.model;
 
 import android.os.SystemClock;
 

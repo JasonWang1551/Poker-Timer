@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace = "com.firetv"
+    namespace = "com.pokertimer.homegame.timer"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.firetv"
+        applicationId = "com.pokertimer.homegame.timer"
         minSdk = 22
         targetSdk = 35
         versionCode = 1

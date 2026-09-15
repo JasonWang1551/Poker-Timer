@@ -1,6 +1,6 @@
-package com.firetv.controller;
+package com.pokertimer.homegame.timer.controller;
 
-import com.firetv.ui.ButtonColors;
+import com.pokertimer.homegame.timer.ui.ButtonColors;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
@@ -24,7 +24,7 @@ import android.widget.TextView;
 
 import androidx.core.graphics.ColorUtils;
 
-import com.firetv.R;
+import com.pokertimer.homegame.timer.R;
 
 import java.util.ArrayList;
 import java.util.List;

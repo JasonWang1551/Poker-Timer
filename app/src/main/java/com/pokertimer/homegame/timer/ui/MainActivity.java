@@ -1,4 +1,4 @@
-package com.firetv.ui;
+package com.pokertimer.homegame.timer.ui;
 
 import android.app.AlertDialog;
 import android.os.Build;
@@ -17,17 +17,17 @@ import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
 
-import com.firetv.R;
-import com.firetv.controller.MainScreenControlsController;
-import com.firetv.controller.RemoteKeys;
-import com.firetv.controller.TournamentEditorController;
-import com.firetv.model.CountdownTimer;
-import com.firetv.model.Tournament;
-import com.firetv.model.TournamentLevel;
-import com.firetv.data.TournamentStore;
-import com.firetv.controller.AlarmSoundController;
-import com.firetv.controller.TextToSpeechController;
-import com.firetv.controller.ThemeController;
+import com.pokertimer.homegame.timer.R;
+import com.pokertimer.homegame.timer.controller.MainScreenControlsController;
+import com.pokertimer.homegame.timer.controller.RemoteKeys;
+import com.pokertimer.homegame.timer.controller.TournamentEditorController;
+import com.pokertimer.homegame.timer.model.CountdownTimer;
+import com.pokertimer.homegame.timer.model.Tournament;
+import com.pokertimer.homegame.timer.model.TournamentLevel;
+import com.pokertimer.homegame.timer.data.TournamentStore;
+import com.pokertimer.homegame.timer.controller.AlarmSoundController;
+import com.pokertimer.homegame.timer.controller.TextToSpeechController;
+import com.pokertimer.homegame.timer.controller.ThemeController;
 
 import java.util.List;
 import java.util.Locale;

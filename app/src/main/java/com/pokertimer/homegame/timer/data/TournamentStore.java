@@ -1,7 +1,7 @@
-package com.firetv.data;
+package com.pokertimer.homegame.timer.data;
 
-import com.firetv.model.Tournament;
-import com.firetv.model.TournamentLevel;
+import com.pokertimer.homegame.timer.model.Tournament;
+import com.pokertimer.homegame.timer.model.TournamentLevel;
 
 import android.content.Context;
 import android.content.SharedPreferences;

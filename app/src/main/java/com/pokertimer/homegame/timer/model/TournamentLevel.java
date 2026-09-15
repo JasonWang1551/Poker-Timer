@@ -1,4 +1,4 @@
-package com.firetv.model;
+package com.pokertimer.homegame.timer.model;
 
 public class TournamentLevel {
     private String title;

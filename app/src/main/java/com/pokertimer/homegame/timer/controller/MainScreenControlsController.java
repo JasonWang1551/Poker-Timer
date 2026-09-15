@@ -1,10 +1,10 @@
-package com.firetv.controller;
+package com.pokertimer.homegame.timer.controller;
 
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.ImageButton;
 
-import com.firetv.R;
+import com.pokertimer.homegame.timer.R;
 
 public class MainScreenControlsController {
     private final View previousButton;
