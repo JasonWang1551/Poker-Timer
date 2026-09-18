@@ -46,6 +46,15 @@
             android:layout_marginTop="24dp"
             android:text="@string/text_to_speech" />
 
+        <TextView
+            android:id="@+id/tts_unavailable_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/tts_unavailable_message"
+            android:textColor="?attr/themeText"
+            android:visibility="gone" />
+
         <LinearLayout
             android:id="@+id/text_to_speech_options_container"
             android:layout_width="match_parent"

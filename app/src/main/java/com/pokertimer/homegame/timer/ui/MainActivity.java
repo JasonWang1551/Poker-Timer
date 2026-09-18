@@ -880,6 +880,9 @@ public class MainActivity extends FragmentActivity {
             }
         } else {
             timer.pause();
+            if (shouldPlayAlert) {
+                playTimerAlert(null);
+            }
         }
     }
 

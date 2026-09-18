@@ -8,6 +8,8 @@ import android.content.res.ColorStateList;
 import android.media.AudioAttributes;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
+import android.speech.tts.Voice;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
@@ -16,6 +18,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.pokertimer.homegame.timer.R;
 import com.pokertimer.homegame.timer.model.TournamentLevel;
@@ -56,40 +59,117 @@ public final class TextToSpeechController {
     private final List<View> announcementOptions = new ArrayList<>();
     private final List<View> previewButtons = new ArrayList<>();
     private final List<View> textFields = new ArrayList<>();
+    private final List<String> alternateEngines = new ArrayList<>();
     private EditText anteTextField;
     private String pendingText;
+    private String currentSpeechText;
+    private String activeUtteranceId;
     private TextToSpeech textToSpeech;
     private boolean ready;
+    private boolean speechUnavailable;
+    private int engineIndex = -1;
+    private int engineGeneration;
+    private int utteranceNumber;
     private LinearLayout options;
+    private TextView unavailableMessage;
 
     public TextToSpeechController(Activity activity, CurrentLevelProvider currentLevel) {
         this.activity = activity;
         this.currentLevel = currentLevel;
         preferences = activity.getSharedPreferences(SETTINGS_PREFERENCES, Activity.MODE_PRIVATE);
-        textToSpeech = new TextToSpeech(activity, status -> {
-            if (status == TextToSpeech.SUCCESS) {
-                activity.runOnUiThread(() -> {
-                    if (textToSpeech != null) {
-                        textToSpeech.setAudioAttributes(new AudioAttributes.Builder()
-                                .setUsage(AudioAttributes.USAGE_MEDIA)
-                                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                                .build());
-                        textToSpeech.setLanguage(Locale.getDefault());
-                    }
-                    ready = textToSpeech != null;
-                    if (pendingText != null) {
-                        String queuedText = pendingText;
-                        pendingText = null;
-                        speakText(queuedText);
-                    }
-                });
+        startEngine(null);
+    }
+
+    private void startEngine(String name) {
+        ready = false;
+        int generation = ++engineGeneration;
+        if (textToSpeech != null) textToSpeech.shutdown();
+        TextToSpeech.OnInitListener listener = status ->
+                activity.runOnUiThread(() -> initializeSpeech(status, generation));
+        textToSpeech = name == null
+                ? new TextToSpeech(activity, listener)
+                : new TextToSpeech(activity, listener, name);
+    }
+
+    private void initializeSpeech(int status, int generation) {
+        if (generation != engineGeneration || textToSpeech == null) return;
+        if (alternateEngines.isEmpty()) {
+            String defaultEngine = textToSpeech.getDefaultEngine();
+            for (TextToSpeech.EngineInfo info : textToSpeech.getEngines()) {
+                if (info.name != null && !info.name.equals(defaultEngine)) {
+                    alternateEngines.add(info.name);
+                }
+            }
+        }
+        if (status != TextToSpeech.SUCCESS) {
+            tryNextEngine();
+            return;
+        }
+        textToSpeech.setAudioAttributes(new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                .build());
+        Voice defaultVoice = textToSpeech.getDefaultVoice();
+        int languageStatus = textToSpeech.setLanguage(Locale.getDefault());
+        if (languageStatus < TextToSpeech.LANG_AVAILABLE) {
+            languageStatus = textToSpeech.setLanguage(Locale.US);
+        }
+        if (languageStatus < TextToSpeech.LANG_AVAILABLE) {
+            languageStatus = textToSpeech.setLanguage(Locale.ENGLISH);
+        }
+        if (languageStatus < TextToSpeech.LANG_AVAILABLE && defaultVoice != null) {
+            textToSpeech.setVoice(defaultVoice);
+        }
+        textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+            @Override public void onStart(String utteranceId) { }
+            @Override public void onDone(String utteranceId) { }
+            @Override public void onError(String utteranceId) {
+                retrySpeech(utteranceId, generation);
+            }
+            @Override public void onError(String utteranceId, int errorCode) {
+                retrySpeech(utteranceId, generation);
             }
         });
+        ready = true;
+        setSpeechUnavailable(false);
+        if (pendingText != null) {
+            String queuedText = pendingText;
+            pendingText = null;
+            speakText(queuedText);
+        }
+    }
+
+    private boolean tryNextEngine() {
+        if (engineIndex + 1 >= alternateEngines.size()) {
+            ready = false;
+            pendingText = null;
+            setSpeechUnavailable(true);
+            return false;
+        }
+        startEngine(alternateEngines.get(++engineIndex));
+        return true;
+    }
+
+    private void retrySpeech(String utteranceId, int generation) {
+        activity.runOnUiThread(() -> {
+            if (generation != engineGeneration || !utteranceId.equals(activeUtteranceId)) return;
+            pendingText = currentSpeechText;
+            tryNextEngine();
+        });
+    }
+
+    private void setSpeechUnavailable(boolean unavailable) {
+        speechUnavailable = unavailable;
+        if (unavailableMessage != null) {
+            unavailableMessage.setVisibility(unavailable ? View.VISIBLE : View.GONE);
+        }
     }
 
     /** Connects the speech controls declared in the Settings layout. */
     public void bindSettings(int nextSectionId) {
         options = activity.findViewById(R.id.text_to_speech_options_container);
+        unavailableMessage = activity.findViewById(R.id.tts_unavailable_message);
+        setSpeechUnavailable(speechUnavailable);
         announcementOptions.clear();
         previewButtons.clear();
         textFields.clear();
@@ -181,6 +261,7 @@ public final class TextToSpeechController {
     public void shutdown() {
         stop();
         ready = false;
+        engineGeneration++;
         if (textToSpeech != null) {
             textToSpeech.shutdown();
             textToSpeech = null;
@@ -189,6 +270,8 @@ public final class TextToSpeechController {
 
     public void stop() {
         pendingText = null;
+        currentSpeechText = null;
+        activeUtteranceId = null;
         if (textToSpeech != null) {
             textToSpeech.stop();
         }
@@ -250,9 +333,16 @@ public final class TextToSpeechController {
             pendingText = text;
             return;
         }
+        currentSpeechText = text;
+        activeUtteranceId = "poker_timer_" + (++utteranceNumber);
         Bundle parameters = new Bundle();
         parameters.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1.0f);
-        textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, parameters, "poker_timer_announcement");
+        int queueStatus = textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, parameters,
+                activeUtteranceId);
+        if (queueStatus != TextToSpeech.SUCCESS) {
+            pendingText = text;
+            tryNextEngine();
+        }
     }
 
     private void configureNavigation(int nextSectionId) {

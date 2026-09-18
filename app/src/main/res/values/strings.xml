@@ -54,6 +54,7 @@
     <string name="choose_alarm_sound_collapsed">Alarm: %1$s  ▼</string>
     <string name="choose_alarm_sound_expanded">Alarm: %1$s  ▲</string>
     <string name="no_alarm_sounds">No alarm sounds</string>
+    <string name="tts_unavailable_message">No installed text-to-speech engine could play an announcement on this device.</string>
     <string name="sample_sound">Sample</string>
     <string name="text_to_speech">Text to speech</string>
     <string name="text_to_speech_collapsed">Text to speech  ▼</string>
